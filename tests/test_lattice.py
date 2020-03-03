@@ -2,4 +2,5 @@ import unittest
 
 
 class TestLattice(unittest.TestCase):
-    pass
+    def test_something(self):
+        assert True
