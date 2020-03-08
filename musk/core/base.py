@@ -1,5 +1,8 @@
-import os
 import logging
+import os
+import random
+import string
+from musk.exceptions import ParameterException
 
 
 class Base:
@@ -28,8 +31,6 @@ class Base:
         return os.path.join(storage_path, name)
 
     def _get_storage_path(self):
-        if not self.meta.storage_path:
-            raise ParameterException("No storage path")
         return self.meta.storage_path
 
     def _get_meta_base_path(self, storage_path, name):
