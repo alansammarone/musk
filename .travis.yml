@@ -10,5 +10,4 @@ install:
   - pip install ".[test]" . # install package + test dependencies
 script: coverage run -m unittest discover # run tests
 after_success:
-  - codecov # submit coverage
   - bash <(curl -s https://codecov.io/bash)
