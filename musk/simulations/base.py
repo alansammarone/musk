@@ -27,8 +27,6 @@ class Simulation(Base):
         lattices = []
         for lattice_name in self.meta.lattice_names:
             lattice_class = self.get_lattice_class()
-
-            print(self._should_save())
             lattice = lattice_class.load(lattice_name, self._get_lattice_storage_path())
             lattices.append(lattice)
         return lattices

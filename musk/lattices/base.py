@@ -2,6 +2,7 @@ import logging
 
 from musk.core import Base
 from musk.metas import LatticeMeta
+from ..exceptions import InvalidStateException
 
 
 class Lattice(Base):
@@ -44,7 +45,12 @@ class Lattice(Base):
         return self._state
 
     def get_state_at_node(self, i, j):
-        return self.get_state()[i][j]
+        state = self.get_state()[i][j]
+        if state is None:
+            raise InvalidStateException(
+                f"Node at position ({i},{j}) is not initialized."
+            )
+        return state
 
     def set_state_from_matrix(self, matrix):
 
@@ -81,6 +87,7 @@ class Lattice(Base):
             Return all clusters present in the lattice
             whose state equals state.
         """
+
         clusters = set()
         for node in self.get_all_nodes():
             if self.get_state_at_node(*node) != state:

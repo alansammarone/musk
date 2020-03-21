@@ -52,6 +52,7 @@ class SimplePercolationSimulation(Simulation):
         return self.get_lattice().get_clusters_with_state(1)
 
     def run(self):
+        print("Inside: " + str(id(self)))
         self.logger.info(
             f"Running SimplePercolationSimulation with "
             f"lattice_size {self.meta.lattice_size} and "
@@ -62,6 +63,11 @@ class SimplePercolationSimulation(Simulation):
                 state = self.get_random_state_node(i, j)
                 self.set_state_at_node(state, i, j)
 
-        if self._should_save():
-            self.get_lattice().save()
-            self.save()
+        return {"clusters": self.get_clusters()}
+
+        # self.clusters = self.get_clusters()
+        # self.save_clusters()
+
+        # if self._should_save():
+        #     self.get_lattice().save()
+        #     self.save()

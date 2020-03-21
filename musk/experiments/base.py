@@ -1,4 +1,5 @@
 import itertools
+import multiprocessing
 import os
 import shutil
 
@@ -68,12 +69,17 @@ class Experiment(Base):
             experiments_parameters.append(experiment_parameters)
         return experiments_parameters
 
-    def run(self):
+    def run(self, n_workers=multiprocessing.cpu_count() - 1):
 
         simulations = self.get_simulations()
+        simulation_futures = []
+        with multiprocessing.Pool(n_workers) as pool:
+            for simulation in simulations:
+                print(id(simulation))
+                simulation_futures.append(pool.apply_async(simulation.run))
 
-        for simulation in simulations:
-            simulation.run()
+            for simulation_future in simulation_futures:
+                simulation_future.get()
 
         if self._should_save():
             self.save()
