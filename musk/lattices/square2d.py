@@ -2,6 +2,9 @@ from .base import Lattice
 
 
 class Square2DLattice(Lattice):
+    def __init__(self, size):
+        self._size = size
+
     def get_neighbour_nodes(self, i, j):
         last_node_index = self.get_size() - 1
         neighbours = set()
@@ -21,3 +24,9 @@ class Square2DLattice(Lattice):
         for i in range(self.get_size()):
             for j in range(self.get_size()):
                 yield (i, j)
+
+    def set_state_from_matrix(self, matrix):
+
+        for i, row in enumerate(matrix):
+            for j, entry in enumerate(row):
+                self.set_state_at_node(entry, i, j)

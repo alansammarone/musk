@@ -1,86 +1,48 @@
 import logging
+import random
 
-from musk.core import Base
-from musk.metas import LatticeMeta
 from ..exceptions import InvalidStateException
 
 
-class Lattice(Base):
+class Lattice:
 
-    STATE_FILE_NAME = "state.json"
-
-    size = None
+    _size = None
     _state = None
 
-    def __init__(self, meta, new=True):
-        self.meta = meta
-        self._new = new
-        self.logger = logging.getLogger("lattice")
-
     def get_size(self):
-        return self.meta.size
+        return self._size
 
-    def initialize_state(self):
-        if self._is_new():
-            state = self._build_state()  # TODO - funny name?
-        else:
-            state = self._load_state()
-        return state
+    def get_state_at_node(self, *indexes):
+        node_key = self._get_node_key(*indexes)
 
-    def _build_state(self):
-        size = self.get_size()
-        state = {}
-        for i in range(size):
-            row = {}
-            for j in range(size):
-                row[j] = None
-            state[i] = row
-        return state
-
-    def get_state(self):
-
-        if not self._state:
-            self._state = self.initialize_state()
-
-        return self._state
-
-    def get_state_at_node(self, i, j):
-        state = self.get_state()[i][j]
-        if state is None:
+        try:
+            return self._state[node_key]
+        except KeyError:
             raise InvalidStateException(
-                f"Node at position ({i},{j}) is not initialized."
+                f"Node at position ({node_key}) is not initialized."
             )
-        return state
 
-    def set_state_from_matrix(self, matrix):
+    def _get_node_key(self, *indexes):
 
-        for i, row in enumerate(matrix):
-            for j, entry in enumerate(row):
-                self.set_state_at_node(entry, i, j)
+        if len(indexes) == 0:
+            raise ValueError("Empty indexes received")
 
-    def set_state_at_node(self, state, i, j):
+        return "_".join(map(str, indexes))
+
+    def set_state_at_node(self, state, *indexes):
 
         if not self._state:
-            self._state = self.initialize_state()
+            self._state = {}
 
-        self._state[i][j] = state
+        self._state[self._get_node_key(*indexes)] = state
 
-    def _get_state_storage_path(self):
-        return os.path.join(self._get_instance_storage_path(), Lattice.STATE_FILE_NAME,)
+    def fill_randomly(self, state_choices, state_weights=None):
 
-    def _save_state(self):
-        state_storage_path = self._get_state_storage_path()
-        self._create_directory_if_not_exists(os.path.dirname(state_storage_path))
+        states = random.choices(state_choices, weights=state_weights, k=self.get_size())
+        node_indexes = self.get_all_nodes()
 
-        state_file_contents = json.dumps(self.get_state(), indent=4).encode("utf8")
-        with open(state_storage_path, "wb") as state_file:
-            state_file.write(state_file_contents)
-
-    def _load_state(self):
-        state_storage_path = self._get_state_storage_path()
-        with open(state_storage_path, "rb") as state_file:
-            state = json.loads(state_file.read())
-        return state
+        for node_index, state in zip(node_indexes, states):
+            self.set_state_at_node(state, *node_index)
 
     def get_clusters_with_state(self, state):
         """
@@ -107,7 +69,6 @@ class Lattice(Base):
     def get_cluster(self, start_node):
         """ 
             Return the cluster start_node belongs to.
-
         """
         start_node_state = self.get_state_at_node(*start_node)
         visited, stack = set(), [start_node]
@@ -126,14 +87,3 @@ class Lattice(Base):
             )
 
         return frozenset(visited)
-
-    def save(self):
-        super().save()
-        self._save_state()
-
-    @classmethod
-    def load(cls, name, storage_path):
-        meta_base_path = cls._build_instance_storage_path(storage_path, name)
-        meta_file_path = cls._get_meta_file_path(meta_base_path)
-        meta = LatticeMeta.load(meta_file_path)
-        return cls(meta, new=False)
