@@ -141,22 +141,25 @@ class Experiment:
         with open(storage_file_path, "wb") as storage_file:
             storage_file.write(json.dumps(meta, indent=4).encode("utf-8"))
 
-    def _run_simulations_async(self, n_workers, delete_artificats):
+    def _run_simulations_async(self, n_workers):
         futures = []
-
         with multiprocessing.Pool(n_workers) as pool:
+            number_of_simulations = 0
             for simulation in self._get_simulations():
+                number_of_simulations += 1
                 futures.append(pool.apply_async(simulation.run_async))
 
-            for future in futures:
+            for index, future in enumerate(futures):
                 future.get()
+                print(f"Done with {index}/{number_of_simulations}")
 
     def run_simulations(self, n_workers=None, force_recompute=False):
 
         if n_workers is None:
             n_workers = multiprocessing.cpu_count() - 1
 
-        if force_recompute is True or self._meta_file_exists() is False:
-            self._run_simulations_async(n_workers, self._delete_artifacts)
+        if force_recompute or not self._meta_file_exists():
+
+            self._run_simulations_async(n_workers)
             if self._delete_artifacts is False:
                 self._store_meta()

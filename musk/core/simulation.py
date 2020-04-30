@@ -36,6 +36,7 @@ class Simulation:
         )
 
     def store_observables(self, observables):
+
         relative_filepath = self.get_observables_relative_filepath()
         Misc.create_directory_if_not_exists(os.path.dirname(relative_filepath))
         with shelve.open(relative_filepath) as storage:
@@ -59,7 +60,9 @@ class Simulation:
 
     def run_async(self):
         try:
+            print(f"Starting {self.get_parameters()}")
             observables = self.run(**self.get_parameters())
+
             self.store_observables(observables)
         except:
             logging.exception("Error in worker:")
