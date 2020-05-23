@@ -24,11 +24,21 @@ To install this package you can run `pip install musk`.
 
 ## Examples
 
+#### 2D Percolation
+
+This is just the classic percolation, in which we start with a square lattice of size N, and randomly set the state of each node to 1 with probability `p` and 0 with probability `1-p`. Some interesting quantities to look at are, for example, the average cluster size as a function of `p`:
+
+![perc_2d_cluster_size](examples/images/perc_2d_cluster_size.png)  
+
+as well as the percolation probability, i.e., the probability that there exists a cluster connection the top and bottom edges of the lattice:
+
+![perc_2d_prob](/Users/alansammarone/Code/musk/examples/images/perc_2d_prob.png)
+
 #### Mandelbrot percolation
 
 This is a type of percolation in which we subdivide each lattice site into sub-sites (normally each site becomes 4) multiple times. Each time, with probability *p*, we color each of the not yet colored sites. We end up with a self similar, fractal structure - hence the name.
 
-The [mandelbrot_percolation.py](examples/mandelbrot_percolation.py) examples produces an image of the lattice:
+The [percolation_mandelbrot_image.py](examples/percolation_mandelbrot_image.py) example produces an image of the lattice:
 
 ![mandelbrot_percolation](examples/images/mandelbrot_percolation.png)
 
