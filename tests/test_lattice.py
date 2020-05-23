@@ -237,19 +237,6 @@ class TestSquare2DLattice(unittest.TestCase):
         lattice.set_state_from_matrix(matrix_lattice_state)
         self.assertEqual(matrix_lattice_state, lattice.get_state_as_matrix())
 
-    def test_has_percolated_returns_true_when_cluster_has_percolated(self):
-        lattice_size = 3
-        lattice = Square2DLattice(lattice_size)
-        matrix_lattice_state = [
-            [1, 0, 0],
-            [1, 1, 1],
-            [0, 0, 1],
-        ]
-
-        lattice.set_state_from_matrix(matrix_lattice_state)
-        boundaries = lattice.get_boundaries()
-        self.assertTrue()
-
     def test_get_state_as_matrix_produces_correct_output(self):
         lattice_size = 3
         lattice = Square2DLattice(lattice_size)
