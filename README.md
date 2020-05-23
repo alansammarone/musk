@@ -30,9 +30,9 @@ This is just the classic percolation, in which we start with a square lattice of
 
 ![perc_2d_cluster_size](examples/images/perc_2d_cluster_size.png)  
 
-as well as the percolation probability, i.e., the probability that there exists a cluster connection the top and bottom edges of the lattice:
+as well as the percolation probability, i.e., the probability that there exists a cluster connection the top and bottom edges of the lattice, as a function of the occupation probability `p`:
 
-![perc_2d_prob](/Users/alansammarone/Code/musk/examples/images/perc_2d_prob.png)
+![perc_2d_prob](examples/images/perc_2d_prob.png)
 
 #### Mandelbrot percolation
 
