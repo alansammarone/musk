@@ -1,22 +1,27 @@
 import itertools
+import json
 import multiprocessing
 import os
 import shutil
-import json
+from collections import namedtuple
 
 from .. import Misc
+
+SimulationGroupResult = namedtuple(
+    "SimulationGroupResult", ["parameters", "simulations_results"]
+)
 
 
 class Experiment:
 
     META_FILENAME = "meta.json"
+
     _simulations = []
 
     def __init__(
-        self, simulation_class, parameter_range, storage_folder, delete_artifacts=True,
+        self, storage_folder, delete_artifacts=True,
     ):
-        self._simulation_class = simulation_class
-        self._parameter_range = parameter_range
+
         self._storage_folder = storage_folder
         self._delete_artifacts = delete_artifacts
         self._simulation_names = []
@@ -29,6 +34,9 @@ class Experiment:
                 parameter_names[index]: parameter_set[index]
                 for index in range(number_of_parameters)
             }
+
+    def _get_simulation_class(self):
+        return self.simulation
 
     def _get_simulations(self):
         if not self._simulations:
@@ -63,18 +71,19 @@ class Experiment:
 
     def _instantiate_simulations(self):
 
-        parameter_sets = list(self.get_parameter_sets(self._parameter_range))
+        parameter_sets = list(self.get_parameter_sets(self.parameter_range))
         names = self._build_simulation_names(parameter_sets, self._meta_file_exists())
 
         assert len(parameter_sets) == len(names)
 
         simulations = []
         for index in range(len(names)):
-            simulations.append(
-                self._simulation_class(
-                    names[index], self._storage_folder, parameter_sets[index]
-                )
+
+            simulation_class = self._get_simulation_class()
+            simulation_instance = simulation_class(
+                names[index], self._storage_folder, parameter_sets[index]
             )
+            simulations.append(simulation_instance)
 
         return simulations
 
@@ -84,7 +93,7 @@ class Experiment:
         """
         groups = {}
         for simulation in simulations:
-            # We use a frozenset so that we can it the parameters as keys. ????
+
             parameters = frozenset(simulation.get_parameters().items())
             if parameters in groups:
                 groups[parameters].append(simulation)
@@ -98,16 +107,16 @@ class Experiment:
             generate a more useful representation of the group
             to be used by the analysis methods 
         """
-        for parameter_set, simulation_group in aggregated_simulations.items():
-            group_representation = []
+        for parameters, simulation_group in aggregated_simulations.items():
+            simulation_results = []
             for simulation in simulation_group:
-                simulation_representation = {
-                    "observables": simulation.get_observables(),
-                    "parameters": simulation.get_parameters(),
-                }
-                group_representation.append(simulation_representation)
+                simulation_results.append(simulation.get_results())
 
-            yield dict(parameter_set), group_representation
+            yield SimulationGroupResult(
+                # We call dict to get a dict out of the frozenset(dict.items())
+                parameters=dict(parameters),
+                simulations_results=simulation_results,
+            )
 
     def do_delete_artifacts(self):
         for simulation in self._get_simulations():
@@ -129,7 +138,7 @@ class Experiment:
 
     def _get_meta(self):
         return {
-            "parameter_range": self._parameter_range,
+            "parameter_range": self.parameter_range,
             "simulation_names": [
                 simulation.get_name() for simulation in self._get_simulations()
             ],
@@ -141,22 +150,25 @@ class Experiment:
         with open(storage_file_path, "wb") as storage_file:
             storage_file.write(json.dumps(meta, indent=4).encode("utf-8"))
 
-    def _run_simulations_async(self, n_workers, delete_artificats):
+    def _run_simulations_async(self, n_workers):
         futures = []
-
         with multiprocessing.Pool(n_workers) as pool:
+            number_of_simulations = 0
             for simulation in self._get_simulations():
+                number_of_simulations += 1
                 futures.append(pool.apply_async(simulation.run_async))
 
-            for future in futures:
+            for index, future in enumerate(futures):
                 future.get()
+                print(f"Done with {index}/{number_of_simulations}")
 
     def run_simulations(self, n_workers=None, force_recompute=False):
 
         if n_workers is None:
             n_workers = multiprocessing.cpu_count() - 1
 
-        if force_recompute is True or self._meta_file_exists() is False:
-            self._run_simulations_async(n_workers, self._delete_artifacts)
+        if force_recompute or not self._meta_file_exists():
+
+            self._run_simulations_async(n_workers)
             if self._delete_artifacts is False:
                 self._store_meta()

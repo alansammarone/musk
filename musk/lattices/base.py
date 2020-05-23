@@ -12,7 +12,20 @@ class Lattice:
     def get_size(self):
         return self._size
 
+    def _get_node_key(self, *indexes):
+
+        if len(indexes) == 0:
+            raise ValueError("Empty indexes received")
+
+        return "_".join(map(str, indexes))
+
+    def get_nodes_with_state(self, state):
+        for index in self.get_all_nodes():
+            if self.get_state_at_node(*index) == state:
+                yield index
+
     def get_state_at_node(self, *indexes):
+
         node_key = self._get_node_key(*indexes)
 
         try:
@@ -22,23 +35,19 @@ class Lattice:
                 f"Node at position ({node_key}) is not initialized."
             )
 
-    def _get_node_key(self, *indexes):
-
-        if len(indexes) == 0:
-            raise ValueError("Empty indexes received")
-
-        return "_".join(map(str, indexes))
-
     def set_state_at_node(self, state, *indexes):
 
         if not self._state:
             self._state = {}
 
-        self._state[self._get_node_key(*indexes)] = state
+        node_key = self._get_node_key(*indexes)
+        self._state[node_key] = state
 
     def fill_randomly(self, state_choices, state_weights=None):
 
-        states = random.choices(state_choices, weights=state_weights, k=self.get_size())
+        states = random.choices(
+            state_choices, weights=state_weights, k=self.get_number_of_nodes()
+        )
         node_indexes = self.get_all_nodes()
 
         for node_index, state in zip(node_indexes, states):

@@ -1,11 +1,13 @@
-import os
 import json
-
 import logging
+import os
 import shelve
 import shutil
+from collections import namedtuple
 
 from .. import Misc
+
+SimulationResult = namedtuple("SimulationResult", ["parameters", "observables"])
 
 
 class Simulation:
@@ -35,7 +37,13 @@ class Simulation:
             self._get_instance_storage_folder(), self.FILENAME_OBSERVABLES
         )
 
+    def get_results(self):
+        return SimulationResult(
+            parameters=self.get_parameters(), observables=self.get_observables()
+        )
+
     def store_observables(self, observables):
+
         relative_filepath = self.get_observables_relative_filepath()
         Misc.create_directory_if_not_exists(os.path.dirname(relative_filepath))
         with shelve.open(relative_filepath) as storage:
@@ -59,7 +67,9 @@ class Simulation:
 
     def run_async(self):
         try:
+            print(f"Starting {self.get_parameters()}")
             observables = self.run(**self.get_parameters())
+
             self.store_observables(observables)
         except:
             logging.exception("Error in worker:")

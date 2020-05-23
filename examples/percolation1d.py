@@ -2,6 +2,13 @@ import matplotlib.pyplot as plt
 
 from musk import Experiment, Simulation, Linear1DLattice, Misc
 from collections import Counter
+import seaborn
+
+seaborn.set()
+plt.rc("text", usetex=True)
+plt.rc("font", family="serif")
+plt.rc("xtick", labelsize="x-small")
+plt.rc("ytick", labelsize="x-small")
 
 
 class Percolation1DSimulation(Simulation):
@@ -34,22 +41,23 @@ class Percolation1DExperiment(Experiment):
             values = counter.keys()
 
             counts = list(counter.values())
-            frequencies = [count / len(simulation_group) for count in counts]
+            frequencies = [count / sum(counts) for count in counts]
             p = parameter_set["occupation_probability"]
-            print(f"1: {counter[1]/len(cluster_size_ratios)}  - {3 * p * (1 - p) ** 2}")
-            print(f"2: {counter[2]/len(cluster_size_ratios)}  - {2 * p ** 2 * (1 - p)}")
-            print(f"3: {counter[3]/len(cluster_size_ratios)}  - {p ** 3}")
+            n_simulations = len(simulation_group)
 
-            plt.bar(values, frequencies, align="center")
-
-        plt.savefig("bar1png.png")
+            plt.figure(figsize=(16, 9), dpi=200)
+            plt.scatter(values, frequencies)
+        plt.title(f"1D percolation (N={lattice_size})")
+        plt.ylabel("Frequency")
+        plt.xlabel("Cluster size")
+        plt.savefig("perc_2d_prob.png")
 
 
 if __name__ == "__main__":
     parameter_range = {
         # "occupation_probability":  linspace(0.01, 0.99, 99),
-        "occupation_probability": [0.99] * 2,
-        "lattice_size": [3],
+        "occupation_probability": [0.9] * 1000,
+        "lattice_size": [1024],
     }
     experiment = Percolation1DExperiment(
         Percolation1DSimulation,
@@ -57,5 +65,5 @@ if __name__ == "__main__":
         storage_folder="data/percolation1d",
         delete_artifacts=False,
     )
-    # experiment.run_simulations()
+    experiment.run_simulations()
     experiment.run_analysis()

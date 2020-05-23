@@ -25,3 +25,13 @@ class Linear1DLattice(Lattice):
     def set_state_from_list(self, list_):
         for index, entry in enumerate(list_):
             self.set_state_at_node(entry, index)
+
+    def get_number_of_nodes(self):
+        return self.get_size()
+
+    def get_boundaries(self):
+        size = self.get_size()
+
+        left_boundary = frozenset({(0,)})
+        right_boundary = frozenset({(size - 1,)})
+        return frozenset({left_boundary, right_boundary})

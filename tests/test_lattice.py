@@ -79,6 +79,14 @@ class TestLinear1DLattice(unittest.TestCase):
         actual = lattice.get_clusters_with_state(1)
         self.assertEqual(expected, actual)
 
+    def test_get_boundaries_produces_correct_boundaries(self):
+
+        lattice_size = 5
+        lattice = Linear1DLattice(lattice_size)
+        expected = frozenset({frozenset({(0,)}), frozenset({(4,)})})
+
+        self.assertEqual(expected, lattice.get_boundaries())
+
 
 class TestSquare2DLattice(unittest.TestCase):
     def test_clusters_are_computed_correctly(self):
@@ -189,3 +197,63 @@ class TestSquare2DLattice(unittest.TestCase):
                 expected = entry
                 actual = lattice.get_state_at_node(i, j)
                 self.assertEqual(expected, actual)
+
+    def test_divide_produces_correct_state(self):
+
+        lattice_size = 3
+        lattice = Square2DLattice(lattice_size)
+        matrix_lattice_state = [
+            [1, 0, 0],
+            [0, 0, 1],
+            [1, 0, 1],
+        ]
+
+        lattice.set_state_from_matrix(matrix_lattice_state)
+        lattice.divide()
+        expected = [
+            [1, 1, 0, 0, 0, 0],
+            [1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1],
+            [0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+        ]
+        self.assertEqual(lattice.get_size(), 6)
+        for i, row in enumerate(expected):
+            for j, entry in enumerate(row):
+                expected = entry
+                actual = lattice.get_state_at_node(i, j)
+                self.assertEqual(expected, actual)
+
+    def test_get_state_as_matrix_produces_correct_output(self):
+        lattice_size = 3
+        lattice = Square2DLattice(lattice_size)
+        matrix_lattice_state = [
+            [1, 0, 0],
+            [0, 0, 1],
+            [1, 0, 1],
+        ]
+
+        lattice.set_state_from_matrix(matrix_lattice_state)
+        self.assertEqual(matrix_lattice_state, lattice.get_state_as_matrix())
+
+    def test_get_state_as_matrix_produces_correct_output(self):
+        lattice_size = 3
+        lattice = Square2DLattice(lattice_size)
+        matrix_lattice_state = [
+            [1, 0, 0],
+            [0, 0, 1],
+            [1, 0, 1],
+        ]
+
+        lattice.set_state_from_matrix(matrix_lattice_state)
+
+    def test_get_boundaries_produces_correct_boundaries(self):
+        lattice_size = 3
+        lattice = Square2DLattice(lattice_size)
+
+        expected = frozenset(
+            {frozenset({(0, 0), (0, 1), (0, 2)}), frozenset({(2, 0), (2, 1), (2, 2)}),}
+        )
+
+        self.assertEqual(expected, lattice.get_boundaries())
