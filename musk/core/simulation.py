@@ -1,11 +1,13 @@
-import os
 import json
-
 import logging
+import os
 import shelve
 import shutil
+from collections import namedtuple
 
 from .. import Misc
+
+SimulationResult = namedtuple("SimulationResult", ["parameters", "observables"])
 
 
 class Simulation:
@@ -33,6 +35,11 @@ class Simulation:
     def get_observables_relative_filepath(self):
         return os.path.join(
             self._get_instance_storage_folder(), self.FILENAME_OBSERVABLES
+        )
+
+    def get_results(self):
+        return SimulationResult(
+            parameters=self.get_parameters(), observables=self.get_observables()
         )
 
     def store_observables(self, observables):
