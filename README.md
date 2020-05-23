@@ -7,17 +7,16 @@
 
 
 
-Musk is a package to help you run physics/mathematics simulations. Given a simulation class and a set of parameters, it allows you to run simulations in parallel, store and retrieve the outputs of simulations, run analysis of simulations or simulation groups, and provides common aggregations and properties for seamslessly producing and reproducing  relevant outputs. Check out the  [examples](#examples) section to see what you can do with it! 
+Musk is a package to help you run physics/mathematics simulations. Given a simulation class and a set of parameters, it allows you to run simulations in parallel, store and retrieve the outputs of simulations, run analysis of simulations or simulation groups, and provides common aggregations and properties for seamslessly producing and reproducing relevant outputs. Check out the [examples](#examples) section to see what you can do with it!
+
+
 
 ## Table of Contents
 
 - [Installation](#installation)
 
-- [Usage](#usage)
-
 - [Examples](#examples)
 
-  
 
 ## Installation
 To install this package you can run `pip install musk`.
@@ -42,7 +41,6 @@ The [percolation_mandelbrot_image.py](examples/percolation_mandelbrot_image.py) 
 
 ![mandelbrot_percolation](examples/images/mandelbrot_percolation.png)
 
-as well as the cluster size distribution and probability of percolation as a function of *p*:
 
 
 
