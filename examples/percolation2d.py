@@ -46,7 +46,7 @@ class ClusterSizePlot(Plot):
     title = "2D percolation (N={lattice_size})"
     ylabel = "Average cluster size"
     xlabel = "Occupation probability"
-    filename = "perc_2d_cluster_size.png"
+    filename = "images/perc_2d_cluster_size.png"
     figure_quality = 3
 
 
@@ -64,13 +64,27 @@ class ClusterSizePlotAnalyzer:
         ).save()
 
 
+class ClusterSizeExperiment(Experiment):
+
+    simulation = Percolation2DSimulation
+    parameter_range = {
+        "p": [i / 100 for i in range(35, 75, 1)] * 800,
+        "lattice_size": [32],
+    }
+
+    def analyze(self, groups):
+
+        analyzer = ClusterSizePlotAnalyzer()
+        analyzer.run(groups)
+
+
 class PercolationProbabilityPlot(Plot):
 
     title = "2D percolation (N={lattice_size})"
     ylabel = "Probability of percolation"
     xlabel = "Occupation probability"
-    filename = "perc_2d_prob.png"
-    figure_quality = 1
+    filename = "images/perc_2d_prob.png"
+    figure_quality = 3
 
 
 class PercolationPlotAnalyzer:
@@ -89,21 +103,7 @@ class PercolationProbabilityExperiment(Experiment):
 
     simulation = Percolation2DSimulation
     parameter_range = {
-        "p": [i / 100 for i in range(40, 80, 1)] * 10,
-        "lattice_size": [32],
-    }
-
-    def analyze(self, groups):
-
-        analyzer = PercolationPlotAnalyzer()
-        analyzer.run(groups)
-
-
-class ClusterSizeExperiment(Experiment):
-
-    simulation = Percolation2DSimulation
-    parameter_range = {
-        "p": [i / 100 for i in range(35, 75, 1)] * 800,
+        "p": [i / 100 for i in range(45, 75, 1)] * 1000,
         "lattice_size": [32],
     }
 
@@ -115,8 +115,8 @@ class ClusterSizeExperiment(Experiment):
 
 if __name__ == "__main__":
 
-    experiment = ClusterSizeExperiment(
-        storage_folder="data/perc_cluster", delete_artifacts=False,
+    experiment = PercolationProbabilityExperiment(
+        storage_folder="data/perc_prob", delete_artifacts=False,
     )
     experiment.run_simulations()
     experiment.run_analysis()
