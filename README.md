@@ -7,7 +7,9 @@
 
 
 
-Musk is a package to help you run physics/mathematics simulations. Given a simulation class and a set of parameters, it allows you to run simulations in parallel, store and retrieve the outputs of simulations, run analysis of simulations or simulation groups, and provides common aggregations and properties for seamslessly producing and reproducing relevant outputs. Check out the [examples](#examples) section to see what you can do with it!
+
+This package contains a collection of classes, algoritms and plots used in my Bachelor thesis work on computation thesis. It's goal is to make sure all of the results presented are easily reproducible. See https://github.com/alansammarone/MandelbrotPercolation.
+
 
 
 
