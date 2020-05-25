@@ -4,27 +4,46 @@ import random
 from ..exceptions import InvalidStateException
 
 
+from typing import Dict, Tuple, Generator, List, FrozenSet, Set
+
+from typing import Generator
+
+Node1DIndex = int
+NodeIndex = Tuple[Node1DIndex, ...]
+State = int
+Cluster = FrozenSet[NodeIndex]
+
+
 class Lattice:
 
-    _size = None
-    _state = None
+    _size: int
+    _state: Dict = {}
 
-    def get_size(self):
+    def get_all_nodes(self) -> List[NodeIndex]:
+        raise NotImplemented
+
+    def get_number_of_nodes(self) -> int:
+        raise NotImplemented
+
+    def get_neighbour_nodes(self, *node: Node1DIndex) -> Set[NodeIndex]:
+        raise NotImplemented
+
+    def get_size(self) -> int:
         return self._size
 
-    def _get_node_key(self, *indexes):
+    def _get_node_key(self, *indexes) -> str:
 
         if len(indexes) == 0:
             raise ValueError("Empty indexes received")
 
         return "_".join(map(str, indexes))
 
-    def get_nodes_with_state(self, state):
+    def get_nodes_with_state(self, state: State) -> Generator:
         for index in self.get_all_nodes():
             if self.get_state_at_node(*index) == state:
                 yield index
 
-    def get_state_at_node(self, *indexes):
+    def get_state_at_node(self, *indexes: Node1DIndex) -> State:
 
         node_key = self._get_node_key(*indexes)
 
@@ -35,15 +54,12 @@ class Lattice:
                 f"Node at position ({node_key}) is not initialized."
             )
 
-    def set_state_at_node(self, state, *indexes):
-
-        if not self._state:
-            self._state = {}
+    def set_state_at_node(self, state: State, *indexes: Node1DIndex):
 
         node_key = self._get_node_key(*indexes)
         self._state[node_key] = state
 
-    def fill_randomly(self, state_choices, state_weights=None):
+    def fill_randomly(self, state_choices: List[State], state_weights: list = []):
 
         states = random.choices(
             state_choices, weights=state_weights, k=self.get_number_of_nodes()
@@ -53,13 +69,13 @@ class Lattice:
         for node_index, state in zip(node_indexes, states):
             self.set_state_at_node(state, *node_index)
 
-    def get_clusters_with_state(self, state):
+    def get_clusters_with_state(self, state: State) -> FrozenSet[Cluster]:
         """
             Return all clusters present in the lattice
             whose state equals state.
         """
 
-        clusters = set()
+        clusters: set = set()
         for node in self.get_all_nodes():
             if self.get_state_at_node(*node) != state:
                 continue
@@ -75,7 +91,7 @@ class Lattice:
 
         return frozenset(clusters)
 
-    def get_cluster(self, start_node):
+    def get_cluster(self, start_node: NodeIndex) -> Cluster:
         """ 
             Return the cluster start_node belongs to.
         """
