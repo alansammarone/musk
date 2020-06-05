@@ -1,11 +1,13 @@
+import collections
 import string
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 from collections import Counter
-from musk import Experiment, Misc, Simulation, Square2DLattice
+from musk import Experiment, Simulation, Square2DLattice
 from musk.core.observables import Observables
 from musk.core.plot import Plot
+import random
 
 
 def tanh(X, a, b):
@@ -78,33 +80,103 @@ class ClusterSizeExperiment(Experiment):
         analyzer.run(groups)
 
 
-class PercolationProbabilityPlot(Plot):
+class FixedSizePercolationProbabilityPlot(Plot):
 
     title = "2D percolation (N={lattice_size})"
     ylabel = "Probability of percolation"
     xlabel = "Occupation probability"
-    filename = "images/perc_2d_prob.png"
+    filename = "images/perc_2d_prob_fixed_size.png"
     figure_quality = 3
 
 
-class PercolationPlotAnalyzer:
+class FixedSizePercolationPlotAnalyzer:
     def run(self, groups):
         X, Y = [], []
         for group in groups:
             X.append(group.parameters["p"])
             Y.append(Observables.get_observable_group_average(group, "has_percolated"))
 
-        PercolationProbabilityPlot(
+        FixedSizePercolationProbabilityPlot(
             X, Y, parameters=group.parameters, fit_fn=tanh
         ).save()
+
+
+class FixedSizePercolationProbabilityExperiment(Experiment):
+
+    simulation = Percolation2DSimulation
+    parameter_range = {
+        "p": [i / 100 for i in range(45, 75, 1)] * 10,
+        "lattice_size": [32],
+    }
+
+    def analyze(self, groups):
+
+        analyzer = FixedSizePercolationPlotAnalyzer()
+        analyzer.run(groups)
+
+
+class PercolationProbabilityPlot(Plot):
+
+    title = "2D percolation"
+    ylabel = "Critical probability"
+    xlabel = "Lattice size"
+    filename = "images/perc_2d_prob.png"
+    figure_quality = 2
+
+
+class PercolationPlotAnalyzer:
+    def run(self, groups):
+
+        plot = collections.defaultdict(list)
+        plot2 = PercolationProbabilityPlot()
+        for group in groups:
+            size = group.parameters["lattice_size"]
+            plot[size].append(group)
+
+        for size, groups in plot.items():
+            X, Y = [], []
+            for group in groups:
+                X.append(group.parameters["p"])
+                Y.append(
+                    Observables.get_observable_group_average(group, "has_percolated")
+                )
+        #     plot2.plot(X, Y, f"N={size}", fit_fn=tanh)
+
+        # plot2.save()
+
+        # if size in [32, 64]:
+        #     plt.plot(X, Y)
+        # plt.show()
+
+        # if size in plot:
+
+        # plot[size].append(
+        #     Observables.get_observable_group_average(group, "has_percolated")
+        # )
+
+        # for lattice_size, has_percolated_observations in plot.items():
+        #     plt.plot()
+
+        # p_critical =
+
+        # X, Y = [], []
+        # for group in groups:
+        #     X.append(group.parameters["p"])
+        #     Y.append(Observables.get_observable_group_average(group, "has_percolated"))
+
+        # PercolationProbabilityPlot(
+        #     X, Y, parameters=group.parameters, fit_fn=tanh
+        # ).save()
 
 
 class PercolationProbabilityExperiment(Experiment):
 
     simulation = Percolation2DSimulation
     parameter_range = {
-        "p": [i / 100 for i in range(45, 75, 1)] * 1000,
-        "lattice_size": [32],
+        # "lattice_size": [16, 32, 64, 96],
+        "lattice_size": [256] * 64,
+        # "p": [i / 100 for i in range(50, 70, 1)] * 200,
+        "p": [0.59],
     }
 
     def analyze(self, groups):
@@ -116,7 +188,17 @@ class PercolationProbabilityExperiment(Experiment):
 if __name__ == "__main__":
 
     experiment = PercolationProbabilityExperiment(
-        storage_folder="data/perc_prob", delete_artifacts=False,
+        storage_folder="data/perc_prob", delete_artifacts=True,
     )
+    import random
+
+    random.seed(3323)
+    # import cProfile
+
+    # pr = cProfile.Profile()
+    # pr.enable()
     experiment.run_simulations()
+    # pr.disable()
+    # pr.dump_stats("my_prof.prof")
+
     experiment.run_analysis()

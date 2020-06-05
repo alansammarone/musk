@@ -1,6 +1,8 @@
 import logging
 import random
+import functools
 
+import numba
 from ..exceptions import InvalidStateException
 
 
@@ -31,6 +33,7 @@ class Lattice:
     def get_size(self) -> int:
         return self._size
 
+    @functools.lru_cache(maxsize=None)
     def _get_node_key(self, *indexes) -> str:
 
         if len(indexes) == 0:
@@ -96,14 +99,14 @@ class Lattice:
             Return the cluster start_node belongs to.
         """
         start_node_state = self.get_state_at_node(*start_node)
-        visited, stack = set(), [start_node]
+        visited, stack = set(), set([start_node])
         while stack:
             node = stack.pop()
             if node in visited:
                 continue
             visited.add(node)
             neighbors = self.get_neighbour_nodes(*node)
-            stack.extend(
+            stack.update(
                 filter(
                     lambda neighbor: self.get_state_at_node(*neighbor)
                     == start_node_state,

@@ -68,8 +68,17 @@ class Simulation:
     def run_async(self):
         try:
             print(f"Starting {self.get_parameters()}")
-            observables = self.run(**self.get_parameters())
 
+            # import cProfile
+
+            # pr = cProfile.Profile()
+            # pr.enable()
+            # observables = self.run(**self.get_parameters())
+            # self.store_observables(observables)
+            # pr.disable()
+            # pr.dump_stats("my_prof.prof")
+
+            observables = self.run(**self.get_parameters())
             self.store_observables(observables)
         except:
             logging.exception("Error in worker:")
