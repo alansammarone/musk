@@ -145,7 +145,6 @@ class MySQL:
     @staticmethod
     def get_new_connection():
         config = MySQL._get_connection_config()
-        print(config)
         connection = mysql.connector.connect(**config)
         return connection
 
