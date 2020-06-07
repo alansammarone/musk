@@ -7,4 +7,4 @@ class Percolation2DSquare(SQSQueue):
 
 template = dict(parameters=dict(probability=0.59, size=128,), repeat=32)
 
-Percolation2DSquare("dev").write([template] * 10)
+Percolation2DSquare("prod").write([template] * 10)

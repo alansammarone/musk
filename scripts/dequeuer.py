@@ -197,7 +197,7 @@ def process_message(message):
 
 def listen_to_queue():
     try:
-        queue = Percolation2DSquareQueue("dev")
+        queue = Percolation2DSquareQueue("prod")
         logger.info("Reading queue...")
         for message in queue.read(1):
             process_message(message)
