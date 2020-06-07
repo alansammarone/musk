@@ -1,11 +1,6 @@
 from .base import Lattice
 import functools
 
-from numba import njit
-from numba.typed import Dict
-from numba import types
-import numba
-
 
 class Square2DLattice(Lattice):
 
@@ -88,8 +83,8 @@ class Square2DLattice(Lattice):
         return frozenset({top_boundary, bottom_boundary})
 
     def divide(self):
-        """ 
-            Update state so that any node with a given state 
+        """
+            Update state so that any node with a given state
             becomes 4 nodes with the same state
         """
         state = {}
