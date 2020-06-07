@@ -100,6 +100,7 @@ class Percolation2DSimulation:
             [0, 1], state_weights=[1 - self.probability, self.probability]
         )
         clusters = lattice.get_clusters_with_state(1)
+        # del lattice
         return dict(clusters=clusters)
 
     def execute(self):
@@ -168,7 +169,6 @@ def run_simulation(parameters, connection):
         raise
     finally:
         cursor.close()
-        del simulation
 
 
 def process_message(message):
@@ -181,6 +181,16 @@ def process_message(message):
         start = datetime.now()
         for _ in range(repeat):
             run_simulation(parameters, connection)
+
+        # import gc
+
+        # gc.collect()
+        # h2 = hp.heap()
+
+        # heap = h2 - h1
+        # import pdb
+
+        # pdb.set_trace()
         end = datetime.now()
         took = (end - start).total_seconds()
         took = round(took, 3)
@@ -197,9 +207,9 @@ def process_message(message):
 
 def listen_to_queue():
     try:
-        queue = Percolation2DSquareQueue("prod")
+        queue = Percolation2DSquareQueue("dev")
         logger.info("Reading queue...")
-        for message in queue.read(3):
+        for message in queue.read(1):
             process_message(message)
     except:
         logger.exception("Exception(listen_to_queue):")
@@ -207,7 +217,7 @@ def listen_to_queue():
 
 if __name__ == "__main__":
 
-    cpu_count = multiprocessing.cpu_count()
+    cpu_count = 3  # multiprocessing.cpu_count()
     with concurrent.futures.ProcessPoolExecutor(
         max_workers=cpu_count, mp_context=multiprocessing.get_context("spawn"),
     ) as executor:
@@ -229,6 +239,6 @@ if __name__ == "__main__":
 # from collections import namedtuple
 
 # Message = namedtuple("Message", ["id", "body", "delete", "requeue"])
-# sample_body = dict(repeat=1, parameters={"probability": 0.59, "size": 256})
+# sample_body = dict(repeat=10, parameters={"probability": 0.59, "size": 256})
 # sample_message = Message("myid", sample_body, lambda: None, lambda: None)
 # process_message(sample_message)
