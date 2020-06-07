@@ -199,7 +199,7 @@ def listen_to_queue():
     try:
         queue = Percolation2DSquareQueue("prod")
         logger.info("Reading queue...")
-        for message in queue.read(1):
+        for message in queue.read(5):
             process_message(message)
     except:
         logger.exception("Exception(listen_to_queue):")
