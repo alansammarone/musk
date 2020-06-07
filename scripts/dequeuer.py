@@ -198,13 +198,13 @@ def process_message(message):
 def listen_to_queue():
     try:
         queue = Percolation2DSquareQueue("dev")
+        logger.info("Reading queue...")
         for message in queue.read(1):
             process_message(message)
     except:
         logger.exception("Exception(listen_to_queue):")
 
 
-listen_to_queue()
 if __name__ == "__main__":
 
     cpu_count = multiprocessing.cpu_count()
