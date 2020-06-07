@@ -2,7 +2,6 @@ import logging
 import random
 import functools
 
-import numba
 from ..exceptions import InvalidStateException
 
 
@@ -95,7 +94,7 @@ class Lattice:
         return frozenset(clusters)
 
     def get_cluster(self, start_node: NodeIndex) -> Cluster:
-        """ 
+        """
             Return the cluster start_node belongs to.
         """
         start_node_state = self.get_state_at_node(*start_node)
