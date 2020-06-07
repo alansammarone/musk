@@ -9,6 +9,7 @@ class Square2DLattice(Lattice):
 
     def __init__(self, size):
         self._size = size
+        super().__init__(size)
 
     def get_neighbour_nodes(self, i, j):
 
