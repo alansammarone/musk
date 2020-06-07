@@ -18,7 +18,10 @@ Cluster = FrozenSet[NodeIndex]
 class Lattice:
 
     _size: int
-    _state: Dict = {}
+    _state: Dict
+
+    def __init__(self, size):
+        self._state = {}
 
     def get_all_nodes(self) -> List[NodeIndex]:
         raise NotImplemented
@@ -32,7 +35,6 @@ class Lattice:
     def get_size(self) -> int:
         return self._size
 
-    @functools.lru_cache(maxsize=None)
     def _get_node_key(self, *indexes) -> str:
 
         if len(indexes) == 0:
@@ -114,3 +116,7 @@ class Lattice:
             )
 
         return frozenset(visited)
+
+    # def __del__(self):
+    #     self._state = None
+    #     del self._state
