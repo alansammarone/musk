@@ -119,6 +119,9 @@ class Percolation2DSimulation:
 
 
 class MySQL:
+
+    _connection_timeout = 5
+
     @staticmethod
     def _get_connection_config():
 
@@ -131,12 +134,18 @@ class MySQL:
             database = env("DATABASE", "musk")
 
         return dict(
-            host=host, port=port, user=user, password=password, database=database
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+            connection_timeout=MySQL._connection_timeout,
         )
 
     @staticmethod
     def get_new_connection():
         config = MySQL._get_connection_config()
+        print(config)
         connection = mysql.connector.connect(**config)
         return connection
 
@@ -164,12 +173,12 @@ def run_simulation(parameters, connection):
 
 
 def process_message(message):
-    repeat = message.body["repeat"]
-    parameters = message.body["parameters"]
-    logger.info(f"Processing message ({message.id}) : {message.body}")
-    connection = MySQL.get_new_connection()
-
+    connection = None
     try:
+        repeat = message.body["repeat"]
+        parameters = message.body["parameters"]
+        logger.info(f"Processing message ({message.id}) : {message.body}")
+        connection = MySQL.get_new_connection()
         start = datetime.now()
         for _ in range(repeat):
             run_simulation(parameters, connection)
@@ -182,20 +191,21 @@ def process_message(message):
         message.requeue()
         logger.exception("Exception(process_message):")
     finally:
-        connection.close()
-        del connection
+        if connection:
+            connection.close()
+            del connection
 
 
 def listen_to_queue():
     try:
-        queue = Percolation2DSquareQueue("dev", sleep_interval=5)
+        queue = Percolation2DSquareQueue("dev")
         for message in queue.read(1):
             process_message(message)
     except:
         logger.exception("Exception(listen_to_queue):")
 
 
-# listen_to_queue()
+listen_to_queue()
 if __name__ == "__main__":
 
     cpu_count = multiprocessing.cpu_count()
@@ -205,9 +215,6 @@ if __name__ == "__main__":
         futures = []
         for _ in range(cpu_count):
             futures.append(executor.submit(listen_to_queue))
-
-        # for future in futures:
-
 
 # messages = list(queue.read())
 # for message in messages:
@@ -222,20 +229,7 @@ if __name__ == "__main__":
 
 # from collections import namedtuple
 
-# Message = namedtuple("Message", ["id", "body", "delete"])
+# Message = namedtuple("Message", ["id", "body", "delete", "requeue"])
 # sample_body = dict(repeat=1, parameters={"probability": 0.59, "size": 256})
-# sample_message = Message("myid", sample_body, lambda: None)
+# sample_message = Message("myid", sample_body, lambda: None, lambda: None)
 # process_message(sample_message)
-
-
-"""
-CREATE TABLE `percolation_2d_square` (
-    `id` INT NOT NULL AUTO_INCREMENT,
-    `probability` FLOAT(8) unsigned NOT NULL,
-    `size` SMALLINT unsigned NOT NULL,
-    `observables` MEDIUMBLOB NOT NULL,
-    `took` FLOAT(3) NOT NULL,
-    `created` TIMESTAMP NOT NULL,
-    PRIMARY KEY (`id`)
-);
-"""
