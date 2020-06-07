@@ -2,7 +2,7 @@
 
 if pgrep "dequeuer" > /dev/null
 then
-    ../env/bin/python enqueuer.py
+    ../env/bin/python dequeuer.py
 else
     echo "Dequeuer already running."
 fi
