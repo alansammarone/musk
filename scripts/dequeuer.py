@@ -121,7 +121,7 @@ class Percolation2DSimulation:
 
 class MySQL:
 
-    _connection_timeout = 5
+    _connection_timeout = 20
 
     @staticmethod
     def _get_connection_config():
