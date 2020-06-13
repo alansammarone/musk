@@ -15,5 +15,13 @@ setuptools.setup(
     packages=["musk"],
     classifiers=["Programming Language :: Python :: 3"],
     python_requires=">=3.6",
-    install_requires=["Pillow", "matplotlib", "seaborn", "scipy",],
+    install_requires=[
+        "Pillow",
+        "matplotlib",
+        "seaborn",
+        "scipy",
+        "environs",
+        "mysql-connector-python",
+        "pydantic",
+    ],
 )
