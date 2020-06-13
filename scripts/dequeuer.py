@@ -173,9 +173,16 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
     def _get_write_query(self):
         return """
             INSERT INTO percolation_2d_square_stats
-            (percolation_2d_square_id, has_percolated, created, took)
+            (percolation_2d_square_id, size, probability, has_percolated, created, took)
             VALUES
-            (%(percolation_2d_square_id)s, %(has_percolated)s, %(created)s, %(took)s)
+            (
+                %(percolation_2d_square_id)s,
+                %(size)s,
+                %(probability)s,
+                %(has_percolated)s,
+                %(created)s,
+                %(took)s
+            )
         """
 
     def _get_stats_for_model(self, model):
@@ -195,6 +202,8 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
 
     def _try_and_insert_model(self, model, mysql):
         try:
+            print("writing")
+            print(self._get_write_query())
             mysql.execute(self._get_write_query(), model)
         except IntegrityError as err:
             if int(err.errno) == 1062:
@@ -219,6 +228,8 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
             end = datetime.now()
             stats_model = dict(
                 percolation_2d_square_id=model.id,
+                size=model.size,
+                probability=model.probability,
                 created=datetime.now(),
                 took=(end - start).total_seconds(),
                 **stats_field,
