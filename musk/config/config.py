@@ -18,6 +18,7 @@ class MySQLConfig(Config):
 
 
 class DequeuerConfig(Config):
-    with env.prefixed("DEQUEUER"):
-        MESSAGES_PER_READ = env.int("MESSAGES_PER_READ", 1)
-        ENV = env("ENV", "dev")
+
+    with env.prefixed("DEQUEUER_"):
+        MESSAGES_PER_READ: int = env.int("MESSAGES_PER_READ", 1)
+        ENV: str = env("ENV", "dev")
