@@ -238,7 +238,7 @@ class PercolationDequeuer:
     def __init__(self):
 
         self._config = DequeuerConfig
-        self._queue_env = self._config.env
+        self._queue_env = self._config.ENV
         self._queues_processors = [
             # (
             #     Percolation2DSquareQueue(self._queue_env),
