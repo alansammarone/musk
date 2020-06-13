@@ -202,11 +202,11 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
 
     def _try_and_insert_model(self, model, mysql):
         try:
-            print("writing")
-            print(self._get_write_query())
+
             mysql.execute(self._get_write_query(), model)
         except IntegrityError as err:
             if int(err.errno) == 1062:
+                print("GGG")
                 logger.info(
                     "Parent ID %s already exists. Skipping.",
                     model["percolation_2d_square_id"],
@@ -221,6 +221,7 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
         mysql_rows = mysql.fetch(query, parameters)
         models = map(self._map_row_to_model, mysql_rows)
         stats_models = []
+        count = 0
         for model in models:
 
             start = datetime.now()
@@ -235,6 +236,9 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
                 **stats_field,
             )
             stats_models.append(stats_model)
+            count += 1
+
+        logger.info("Processed %s input models.", count)
 
         for model in stats_models:
             self._try_and_insert_model(model, mysql)
@@ -257,7 +261,6 @@ class PercolationDequeuer:
 
         self._config = DequeuerConfig
         self._queue_env = self._config.ENV
-        print(self._queue_env)
         self._queues_processors = [
             # (
             #     Percolation2DSquareQueue(self._queue_env),
