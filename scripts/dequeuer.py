@@ -21,6 +21,14 @@ from json import dumps, loads, JSONEncoder
 import pickle
 
 
+"""
+-----
+"""
+
+from musk.core.sql import MySQL
+from musk.config.config import MySQLConfig
+
+
 class PythonObjectEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, frozenset):
@@ -30,8 +38,8 @@ class PythonObjectEncoder(JSONEncoder):
 
 
 def as_python_object(dct):
-    if "_python_object" in dct:
-        return eval(dct["_python_object"])
+    if "_python_frozenset" in dct:
+        return eval(dct["_python_frozenset"])
     return dct
 
 
@@ -100,7 +108,6 @@ class Percolation2DSimulation:
             [0, 1], state_weights=[1 - self.probability, self.probability]
         )
         clusters = lattice.get_clusters_with_state(1)
-        # del lattice
         return dict(clusters=clusters)
 
     def execute(self):
@@ -119,111 +126,203 @@ class Percolation2DSimulation:
         return query
 
 
-class MySQL:
-
-    _connection_timeout = 20
-
-    @staticmethod
-    def _get_connection_config():
-
-        env = Env()
-        with env.prefixed("MYSQL_"):
-            host = env("HOST", "localhost")
-            port = env.int("PORT", 3306)
-            user = env("USER", "root")
-            password = env("PASSWORD", None)
-            database = env("DATABASE", "musk")
-
-        return dict(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            database=database,
-            connection_timeout=MySQL._connection_timeout,
-        )
-
-    @staticmethod
-    def get_new_connection():
-        config = MySQL._get_connection_config()
-        connection = mysql.connector.connect(**config)
-        return connection
-
-
 class Percolation2DSquareQueue(SQSQueue):
     name = "percolation_2d_square"
 
 
-def run_simulation(parameters, connection):
-    simulation = Percolation2DSimulation(**parameters)
-    cursor = connection.cursor()
-
-    try:
-
-        simulation.execute()
-        cursor.execute(simulation.get_query(), simulation.model)
-        connection.commit()
-
-    except:
-        connection.rollback()
-        raise
-    finally:
-        cursor.close()
+class Percolation2DSquareStatsQueue(SQSQueue):
+    name = "percolation_2d_square_stats"
 
 
-def process_message(message):
-    connection = None
-    try:
-        repeat = message.body["repeat"]
+from pydantic.dataclasses import dataclass
+
+
+@dataclass
+class Percolatation2DSquareModel:
+
+    id: int
+    probability: float
+    size: int
+    created: datetime
+    took: float
+    observables: dict
+
+    @classmethod
+    def from_db(cls, row: dict):
+        row["observables"] = bz2.decompress(row["observables"])
+        row["observables"] = json.loads(
+            row["observables"], object_hook=as_python_object
+        )
+        return cls(**row)
+
+
+from musk.config import DequeuerConfig
+from musk.core.sqs import SQSMessage
+from collections import namedtuple
+
+
+class SQSMessageProcessor:
+    pass
+
+
+class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
+    def _get_fetch_query(self):
+        return """
+            SELECT * FROM percolation_2d_square
+            WHERE round(probability, 6) = %(probability)s
+            AND size = %(size)s
+        """
+
+    def _get_write_query(self):
+        return """
+            INSERT INTO percolation_2d_square_stats
+            (percolation_2d_square_id, has_percolated, created, took)
+            VALUES
+            (%(percolation_2d_square_id)s, %(has_percolated)s, %(created)s, %(took)s)
+        """
+
+    def _get_stats_for_model(self, model):
+        lattice = Square2DLattice(model.size)
+        boundaries = lattice.get_boundaries()
+        top_boundary, bottom_boundary = list(boundaries)
+        has_percolated = False
+        clusters = model.observables["clusters"]
+        for cluster in clusters:
+            if (cluster & top_boundary) and (cluster & bottom_boundary):
+                has_percolated = True
+                break
+        return dict(has_percolated=has_percolated)
+
+    def _map_row_to_model(self, row):
+        return Percolatation2DSquareModel.from_db(row)
+
+    def process(self, message):
         parameters = message.body["parameters"]
+        parameters["probability"] = 0.52
+        mysql = MySQL()
+
+        mysql_rows = mysql.fetch(self._get_fetch_query(), parameters)
+        models = map(self._map_row_to_model, mysql_rows)
+        stats_models = []
+        for model in models:
+
+            start = datetime.now()
+            stats_field = self._get_stats_for_model(model)
+            end = datetime.now()
+            stats_model = dict(
+                percolation_2d_square_id=model.id,
+                created=datetime.now(),
+                took=(end - start).total_seconds(),
+                **stats_field,
+            )
+            stats_models.append(stats_model)
+
+        for model in stats_models:
+
+            mysql.execute(self._get_write_query(), model)
+
+
+class Percolation2DSimulationProcessor(SQSMessageProcessor):
+    def process(self, message):
+
+        parameters = message.body["parameters"]
+        repeat = message.body["repeat"]
+        mysql = MySQL()
+        for index in range(repeat):
+            simulation = Percolation2DSimulation(**parameters)
+            simulation.execute()
+            mysql.execute(simulation.get_query(), simulation.model)
+
+
+class PercolationDequeuer:
+    def __init__(self):
+
+        self._config = DequeuerConfig
+        self._queue_env = "dev"
+        self._queues_processors = [
+            # (
+            #     Percolation2DSquareQueue(self._queue_env),
+            #     Percolation2DSimulationProcessor(),
+            # ),
+            (
+                Percolation2DSquareStatsQueue(self._queue_env),
+                Percolation2DSquareStatsProcessor(),
+            ),
+        ]
+
+    def _send_message_to_processor(self, message, processor):
+
         logger.info(f"Processing message ({message.id}) : {message.body}")
-        connection = MySQL.get_new_connection()
         start = datetime.now()
-        for _ in range(repeat):
-            run_simulation(parameters, connection)
-
-        # import gc
-
-        # gc.collect()
-        # h2 = hp.heap()
-
-        # heap = h2 - h1
-        # import pdb
-
-        # pdb.set_trace()
+        processor.process(message)
+        message.delete()
         end = datetime.now()
         took = (end - start).total_seconds()
         took = round(took, 3)
-        message.delete()
         logger.info(f"Success processing message ({message.id}), took {took}s")
-    except:
-        message.requeue()
-        logger.exception("Exception(process_message):")
-    finally:
-        if connection:
-            connection.close()
-            del connection
+
+    def dequeue(self):
+        for queue, processor in self._queues_processors:
+            number_of_messages_per_read = self._config.MESSAGES_PER_READ
+            messages = queue.read(number_of_messages_per_read)
+            for message in messages:
+                self._send_message_to_processor(message, processor)
 
 
-def listen_to_queue():
+def async_wrapper():
     try:
-        queue = Percolation2DSquareQueue("prod")
-        logger.info("Reading queue...")
-        for message in queue.read(1):
-            process_message(message)
+        PercolationDequeuer().dequeue()
     except:
-        logger.exception("Exception(listen_to_queue):")
+        logger.exception("Exception in worker: ")
+
+
+class Dequeuer:
+
+    MP_CONTEXT = "spawn"
+
+    def __init__(self):
+        self._config = DequeuerConfig
+        self._cpu_count = 3  # multiprocessing.cpu_count()
+
+    def dequeue(self):
+        while True:
+            logger.info("Restarting pool...")
+            pool = concurrent.futures.ProcessPoolExecutor(
+                max_workers=self._cpu_count,
+                mp_context=multiprocessing.get_context(Dequeuer.MP_CONTEXT),
+            )
+            for _ in range(self._cpu_count):
+                future = pool.submit(async_wrapper)
+
+            pool.shutdown(wait=True)
+            break
 
 
 if __name__ == "__main__":
+    # Message = namedtuple("Message", ["id", "body", "delete", "requeue", "serialize"])
+    # sample_body = dict(repeat=10, parameters={"probability": 0.59, "size": 256})
+    # sample_message = Message(
+    #     "myid", sample_body, lambda: None, lambda: None, lambda: {"HI": 3}
+    # )
 
-    cpu_count = 3  # multiprocessing.cpu_count()
-    with concurrent.futures.ProcessPoolExecutor(
-        max_workers=cpu_count, mp_context=multiprocessing.get_context("spawn"),
-    ) as executor:
-        futures = []
-        for _ in range(cpu_count):
-            futures.append(executor.submit(listen_to_queue))
+    # queue = Percolation2DSquareQueue("dev")
+    # dequeuer = Dequeuer()
+    # dequeuer._send_message_to_processor(
+    #     sample_message, Percolation2DSimulationProcessor
+    # )
+    # dequeuer.dequeue(queue)
+    # -------------------
+
+    Dequeuer().dequeue()
+
+    # -------------------
+    # cpu_count = 3  # multiprocessing.cpu_count()
+    # with concurrent.futures.ProcessPoolExecutor(
+    #     max_workers=cpu_count, mp_context=multiprocessing.get_context("spawn"),
+    # ) as executor:
+    #     futures = []
+    #     for _ in range(cpu_count):
+    #         futures.append(executor.submit(listen_to_queue))
 
 # messages = list(queue.read())
 # for message in messages:

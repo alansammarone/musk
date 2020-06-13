@@ -14,9 +14,28 @@ class SQSMessage:
 
     """
 
-    # This represents the internal boto3 message object
-    # which this class is a wrapper for
-    _message = None
+    # This is the SQS resource, needed when instatiating new messages
+    # not coming directly from a queue resource
+    _sqs = None
+
+    @classmethod
+    def from_serialized(cls, serialized):
+        if not cls._sqs:
+            cls._sqs = cls.get_new_sqs_resource()
+
+        sqs_message_instance = cls._sqs.Message(**serialized["init_args"])
+        sqs_message_instance.body = serialized["message_body"]
+        return cls(sqs_message_instance)
+
+    @classmethod
+    def get_new_sqs_resource(self):
+        """
+            Returns a new sqs object instance,
+            using credentials present in ~/.aws
+            or in env vars.
+        """
+        sqs = boto3.resource("sqs")
+        return sqs
 
     @property
     def id(self):
@@ -38,7 +57,18 @@ class SQSMessage:
         self._message.change_visibility(VisibilityTimeout=0)
 
     def __init__(self, message):
+        # This represents the internal boto3 message object
+        # which this class is a wrapper for
         self._message = message
+
+    def serialize(self):
+        return dict(
+            init_args=dict(
+                queue_url=self._message.queue_url,
+                receipt_handle=self._message.receipt_handle,
+            ),
+            message_attributes=self._message.message_attributes,
+        )
 
 
 class SQSQueue:
@@ -85,8 +115,7 @@ class SQSQueue:
         """
             Returns a new sqs object instance,
             using credentials present in ~/.aws
-            or in case this is running in AWS,
-            using the instance_profile logic
+            or in env vars.
         """
         sqs = boto3.resource("sqs")
         return sqs
