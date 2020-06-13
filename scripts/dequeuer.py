@@ -43,23 +43,6 @@ def as_python_object(dct):
     return dct
 
 
-# data = [
-#     1,
-#     2,
-#     3,
-#     set(["knights", "who", "say", "ni"]),
-#     {"key": "value"},
-#     Decimal("3.14"),
-# ]
-# j = dumps(data, cls=PythonObjectEncoder)
-# print(loads(j, object_hook=as_python_object))
-
-
-"""
------
-"""
-
-
 class Percolation2DSimulation:
 
     probability: float
@@ -155,10 +138,24 @@ class Percolatation2DSquareModel:
         )
         return cls(**row)
 
+    def to_db(self):
+        compressed_observables = bz2.compress(
+            bytes(json.dumps(self.observables, cls=PythonObjectEncoder).encode("utf-8"))
+        )
+        return dict(
+            id=self.id,
+            probability=self.probability,
+            size=self.size,
+            created=self.created,
+            took=self.took,
+            observables=compressed_observables,
+        )
+
 
 from musk.config import DequeuerConfig
 from musk.core.sqs import SQSMessage
 from collections import namedtuple
+from mysql.connector.errors import IntegrityError
 
 
 class SQSMessageProcessor:
@@ -196,12 +193,23 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
     def _map_row_to_model(self, row):
         return Percolatation2DSquareModel.from_db(row)
 
+    def _try_and_insert_model(self, model, mysql):
+        try:
+            mysql.execute(self._get_write_query(), model)
+        except IntegrityError as err:
+            if int(err.errno) == 1062:
+                logger.info(
+                    "Parent ID %s already exists. Skipping.",
+                    model["percolation_2d_square_id"],
+                )
+            else:
+                raise
+
     def process(self, message):
         parameters = message.body["parameters"]
-        parameters["probability"] = 0.52
         mysql = MySQL()
-
-        mysql_rows = mysql.fetch(self._get_fetch_query(), parameters)
+        query = self._get_fetch_query()
+        mysql_rows = mysql.fetch(query, parameters)
         models = map(self._map_row_to_model, mysql_rows)
         stats_models = []
         for model in models:
@@ -218,8 +226,7 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
             stats_models.append(stats_model)
 
         for model in stats_models:
-
-            mysql.execute(self._get_write_query(), model)
+            self._try_and_insert_model(model, mysql)
 
 
 class Percolation2DSimulationProcessor(SQSMessageProcessor):
@@ -239,6 +246,7 @@ class PercolationDequeuer:
 
         self._config = DequeuerConfig
         self._queue_env = self._config.ENV
+        print(self._queue_env)
         self._queues_processors = [
             # (
             #     Percolation2DSquareQueue(self._queue_env),
