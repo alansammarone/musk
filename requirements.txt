@@ -2,8 +2,7 @@ Pillow
 matplotlib
 seaborn
 scipy
-
-
 boto3
 environs
 mysql-connector-python
+pydantic
