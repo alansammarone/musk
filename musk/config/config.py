@@ -21,4 +21,5 @@ class DequeuerConfig(Config):
 
     with env.prefixed("DEQUEUER_"):
         MESSAGES_PER_READ: int = env.int("MESSAGES_PER_READ", 1)
+        PROCESS_COUNT: int = env.int("PROCESS_COUNT", 1)
         ENV: str = env("ENV", "dev")

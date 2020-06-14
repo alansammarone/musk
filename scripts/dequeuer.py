@@ -304,7 +304,7 @@ class Dequeuer:
 
     def __init__(self):
         self._config = DequeuerConfig
-        self._cpu_count = 3  # multiprocessing.cpu_count()
+        self._cpu_count = self._config.PROCESS_COUNT
 
     def dequeue(self):
         while True:
