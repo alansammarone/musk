@@ -1,0 +1,44 @@
+- hosts: workers
+
+  vars:
+    base_path: /opt/musk
+    repository: https://github.com/alansammarone/musk.git
+    package: musk
+    venv_folder: env
+    conf_dir: /conf
+    log_dir: /log
+    tmp_dir: /tmp
+    branch: mysql
+  roles:
+    - name: bihealth.python3
+      python3_versions:
+      - "3.7"
+
+  tasks:
+    - name: Setup server
+      include: tasks/setup.yaml
+
+    - name: Setup ufw
+      include: tasks/ufw.yaml
+
+    - name: Setup dequeuer
+      include: tasks/dequeuer.yaml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

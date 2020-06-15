@@ -1,0 +1,6 @@
+all:
+  hosts:
+    workers:
+      ansible_host: 134.209.84.224
+      ansible_user: root
+      ansible_python_interpreter: /usr/bin/python3

@@ -1,0 +1,19 @@
+- name: "ufw: Reset"
+  ufw:
+    state: reset
+
+- name: "ufw: Deny all traffic"
+  ufw:
+    default: deny
+    direction: incoming
+
+- name: "ufw: Allow HTTP, HTTPS and Nginx"
+  ufw:
+    rule: allow
+    name: "{{ item }}"
+  loop:
+    - OpenSSH
+
+- name: "ufw: Ensure enabled"
+  ufw:
+    state: enabled
