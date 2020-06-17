@@ -65,23 +65,12 @@ class Percolation2DSimulation:
         if not self._has_run:
             raise ValueError("Simulation still did not run.")
 
-        s = bytes(
-            json.dumps(self._observables, cls=PythonObjectEncoder).encode("utf-8")
-        )
-
-        c = bz2.compress(s)
-        return dict(
+        return Percolatation2DSquareModel(
             probability=self.probability,
             size=self.size,
-            observables=bz2.compress(
-                bytes(
-                    json.dumps(self._observables, cls=PythonObjectEncoder).encode(
-                        "utf-8"
-                    )
-                )
-            ),
+            observables=self._observables,
             took=self.took.total_seconds(),
-            created=self.created.strftime("%Y-%m-%d %H:%M:%S"),
+            created=self.created,
         )
 
     def run(self):
@@ -118,17 +107,20 @@ class Percolation2DSquareStatsQueue(SQSQueue):
 
 
 from pydantic.dataclasses import dataclass
+from dataclasses import asdict
+from typing import Optional
 
 
 @dataclass
 class Percolatation2DSquareModel:
 
-    id: int
     probability: float
     size: int
     created: datetime
     took: float
     observables: dict
+
+    id: Optional[int] = None
 
     @classmethod
     def from_db(cls, row: dict):
@@ -139,17 +131,14 @@ class Percolatation2DSquareModel:
         return cls(**row)
 
     def to_db(self):
-        compressed_observables = bz2.compress(
-            bytes(json.dumps(self.observables, cls=PythonObjectEncoder).encode("utf-8"))
-        )
-        return dict(
-            id=self.id,
-            probability=self.probability,
-            size=self.size,
-            created=self.created,
-            took=self.took,
-            observables=compressed_observables,
-        )
+        observables_string = json.dumps(
+            self.observables, cls=PythonObjectEncoder
+        ).encode("utf-8")
+
+        observables_compressed = bz2.compress(bytes(observables_string))
+        model_dict = asdict(self)
+        model_dict.update(dict(observables=observables_compressed))
+        return model_dict
 
 
 from musk.config import DequeuerConfig
@@ -253,7 +242,7 @@ class Percolation2DSimulationProcessor(SQSMessageProcessor):
         for index in range(repeat):
             simulation = Percolation2DSimulation(**parameters)
             simulation.execute()
-            mysql.execute(simulation.get_query(), simulation.model)
+            mysql.execute(simulation.get_query(), simulation.model.to_db())
 
 
 class PercolationDequeuer:
@@ -262,10 +251,10 @@ class PercolationDequeuer:
         self._config = DequeuerConfig
         self._queue_env = self._config.ENV
         self._queues_processors = [
-            # (
-            #     Percolation2DSquareQueue(self._queue_env),
-            #     Percolation2DSimulationProcessor(),
-            # ),
+            (
+                Percolation2DSquareQueue(self._queue_env),
+                Percolation2DSimulationProcessor(),
+            ),
             (
                 Percolation2DSquareStatsQueue(self._queue_env),
                 Percolation2DSquareStatsProcessor(),
@@ -285,6 +274,7 @@ class PercolationDequeuer:
 
     def dequeue(self):
         for queue, processor in self._queues_processors:
+            logger.info(f"Reading queue {queue.get_queue_name()}...")
             number_of_messages_per_read = self._config.MESSAGES_PER_READ
             messages = queue.read(number_of_messages_per_read)
             for message in messages:
@@ -321,45 +311,4 @@ class Dequeuer:
 
 
 if __name__ == "__main__":
-    # Message = namedtuple("Message", ["id", "body", "delete", "requeue", "serialize"])
-    # sample_body = dict(repeat=10, parameters={"probability": 0.59, "size": 256})
-    # sample_message = Message(
-    #     "myid", sample_body, lambda: None, lambda: None, lambda: {"HI": 3}
-    # )
-
-    # queue = Percolation2DSquareQueue("dev")
-    # dequeuer = Dequeuer()
-    # dequeuer._send_message_to_processor(
-    #     sample_message, Percolation2DSimulationProcessor
-    # )
-    # dequeuer.dequeue(queue)
-    # -------------------
-
     Dequeuer().dequeue()
-
-    # -------------------
-    # cpu_count = 3  # multiprocessing.cpu_count()
-    # with concurrent.futures.ProcessPoolExecutor(
-    #     max_workers=cpu_count, mp_context=multiprocessing.get_context("spawn"),
-    # ) as executor:
-    #     futures = []
-    #     for _ in range(cpu_count):
-    #         futures.append(executor.submit(listen_to_queue))
-
-# messages = list(queue.read())
-# for message in messages:
-#     print(message.id)
-# for message in queue.read_forever():
-#     print(message.id)
-#     message.requeue()
-# results = executor.map(process_message, messages)
-# for result in results:
-#     print(result)
-
-
-# from collections import namedtuple
-
-# Message = namedtuple("Message", ["id", "body", "delete", "requeue"])
-# sample_body = dict(repeat=10, parameters={"probability": 0.59, "size": 256})
-# sample_message = Message("myid", sample_body, lambda: None, lambda: None)
-# process_message(sample_message)

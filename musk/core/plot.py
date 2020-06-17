@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn
 import string
 from scipy.optimize import curve_fit
@@ -35,7 +36,7 @@ class Plot:
         string_reprs = []
         for index, value in enumerate(fit_parameters):
             letter = string.ascii_lowercase[index]
-            value_repr = f"{value:.3f}"
+            value_repr = f"{value:.5f}"
             string_reprs.append(f"{letter}={value_repr}")
         string_repr = ", ".join(string_reprs)
         label = f"{base_label} (Fit - {string_repr})"
@@ -44,7 +45,8 @@ class Plot:
     def _plot_fit(self, X, Y, fit_fn, label):
         parameters, _ = curve_fit(fit_fn, X, Y)
         label = self._get_fit_label(label, parameters)
-        plt.plot(X, fit_fn(X, *parameters), "--", label=label)
+        X_fit = np.linspace(min(X), max(X), 100)
+        plt.plot(X_fit, fit_fn(X_fit, *parameters), "--", label=label)
 
     def _add_labels(self, xlabel, ylabel):
         plt.xlabel(xlabel)
