@@ -195,7 +195,6 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
             mysql.execute(self._get_write_query(), model)
         except IntegrityError as err:
             if int(err.errno) == 1062:
-                print("GGG")
                 logger.info(
                     "Parent ID %s already exists. Skipping.",
                     model["percolation_2d_square_id"],
@@ -238,11 +237,13 @@ class Percolation2DSimulationProcessor(SQSMessageProcessor):
 
         parameters = message.body["parameters"]
         repeat = message.body["repeat"]
-        mysql = MySQL()
+
         for index in range(repeat):
             simulation = Percolation2DSimulation(**parameters)
             simulation.execute()
+            mysql = MySQL()
             mysql.execute(simulation.get_query(), simulation.model.to_db())
+            mysql = None
 
 
 class PercolationDequeuer:
