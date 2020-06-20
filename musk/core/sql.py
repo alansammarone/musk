@@ -27,6 +27,7 @@ class MySQL:
             database=self._config.DATABASE,
             connection_timeout=self._config.CONNECTION_TIMEOUT,
             use_pure=True,  # This ensures we use the C Extesion. Otherwise, we get SegFault
+            autocommit=True,
         )
 
     def _get_new_connection(self) -> MySQLConnection:
