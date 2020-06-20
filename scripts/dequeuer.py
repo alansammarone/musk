@@ -283,11 +283,12 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
         stats_models_chunk = []
         chunk_size = 0
         total_count = 0
-        max_chunk_size = 4000
+        max_chunk_size = 1000
         chunk_took = 0
 
         for model in models:
-
+            if total_count % 10 == 0:
+                logger.info("Read 10 rows.")
             start = datetime.now()
             stats_field = self._get_stats_for_model(model)
             end = datetime.now()
