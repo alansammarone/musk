@@ -157,14 +157,11 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
         return """
             SELECT
                 id,
-                percolation_2d_square_id,
-                size,
                 probability,
-                has_percolated,
-                cluster_size_histogram,
-                average_cluster_size,
-                created,
-                took
+                size,
+                observables,
+                took,
+                created
             FROM percolation_2d_square
             WHERE round(probability, 6) = %(probability)s
             AND size = %(size)s
