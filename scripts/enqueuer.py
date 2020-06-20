@@ -17,8 +17,15 @@ def get_all_sizes_and_probabilities():
     return results
 
 
+def get_all_probabilities():
+    query = "select distinct probability from percolation_2d_square;"
+    mysql = MySQL()
+    results = mysql.fetch(query)
+    return results
+
+
 type_ = "stats"
-env = "prod"
+env = "dev"
 
 if type_ == "simulation":
     for p in range(550, 650):
@@ -28,15 +35,12 @@ if type_ == "simulation":
 
 elif type_ == "stats":
 
-    combinations = list(get_all_sizes_and_probabilities())
+    combinations = list(get_all_probabilities())
     import random
 
     random.shuffle(combinations)
     for row in combinations:
-        size = row["size"]
         probability = row["probability"]
-        if size >= 512:
-            continue
-        template = dict(parameters=dict(probability=probability, size=size))
+        template = dict(parameters=dict(probability=probability))
         print(f"Sending {template}")
-        Percolation2DSquareStatsQueue(env).write([template] * 10)
+        Percolation2DSquareStatsQueue(env).write([template])
