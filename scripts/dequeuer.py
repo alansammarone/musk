@@ -164,7 +164,7 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
                 created
             FROM percolation_2d_square
             WHERE round(probability, 6) = %(probability)s
-            -- AND size = %(size)s
+            AND size = %(size)s
         """
 
     def _get_write_query(self):
@@ -246,7 +246,8 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
     def _map_row_to_model(self, row):
         return Percolatation2DSquareModel.from_db(row)
 
-    def _insert_stats_models(self, models, mysql):
+    def _insert_stats_models(self, models):
+        mysql = MySQL()
         start = datetime.now()
         for model in models:
             self._try_and_insert_model(model, mysql)
@@ -307,11 +308,11 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
 
             if chunk_size >= max_chunk_size:
                 logger.info(f"Chunk processing took {chunk_took:.2f}s.")
-                self._insert_stats_models(stats_models_chunk, mysql)
+                self._insert_stats_models(stats_models_chunk)
                 stats_models_chunk = []
                 chunk_size = 0
 
-        self._insert_stats_models(stats_models_chunk, mysql)
+        self._insert_stats_models(stats_models_chunk)
         logger.info(f"Chunk processing took {chunk_took:.2f}s.")
 
         logger.info("Processed %s input models.", total_count)
