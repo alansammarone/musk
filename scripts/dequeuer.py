@@ -164,6 +164,7 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
                 created
             FROM percolation_2d_square
             WHERE round(probability, 6) = %(probability)s
+            ORDER BY RAND()
         """
 
     def _get_write_query(self):
@@ -287,8 +288,8 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
         chunk_took = 0
 
         for model in models:
-            if total_count % 10 == 0:
-                logger.info("Read 10 rows.")
+            if total_count % 500 == 0:
+                logger.info("Read 500 rows.")
             start = datetime.now()
             stats_field = self._get_stats_for_model(model)
             end = datetime.now()
