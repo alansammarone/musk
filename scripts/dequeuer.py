@@ -145,6 +145,7 @@ from musk.config import DequeuerConfig
 from musk.core.sqs import SQSMessage
 from collections import namedtuple
 from mysql.connector.errors import IntegrityError
+import numpy
 
 
 class SQSMessageProcessor:
@@ -161,30 +162,79 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
 
     def _get_write_query(self):
         return """
-            INSERT INTO percolation_2d_square_stats
-            (percolation_2d_square_id, size, probability, has_percolated, created, took)
+            INSERT INTO percolation_2d_square_stats (
+                percolation_2d_square_id,
+                size,
+                probability,
+                has_percolated,
+                cluster_size_histogram,
+                average_cluster_size,
+                created,
+                took
+            )
             VALUES
             (
                 %(percolation_2d_square_id)s,
                 %(size)s,
                 %(probability)s,
                 %(has_percolated)s,
+                %(cluster_size_histogram)s,
+                %(average_cluster_size)s,
                 %(created)s,
                 %(took)s
             )
+            ON DUPLICATE KEY UPDATE
+            has_percolated = %(has_percolated)s,
+            cluster_size_histogram = %(cluster_size_histogram)s,
+            average_cluster_size = %(average_cluster_size)s
+
         """
 
-    def _get_stats_for_model(self, model):
+    def _get_has_percolated(self, model) -> bool:
+        clusters = model.observables["clusters"]
+
         lattice = Square2DLattice(model.size)
         boundaries = lattice.get_boundaries()
         top_boundary, bottom_boundary = list(boundaries)
         has_percolated = False
-        clusters = model.observables["clusters"]
         for cluster in clusters:
             if (cluster & top_boundary) and (cluster & bottom_boundary):
                 has_percolated = True
                 break
-        return dict(has_percolated=has_percolated)
+        return has_percolated
+
+    def _get_cluster_size_histogram(self, model) -> list:
+        bins = 10000
+        clusters = model.observables["clusters"]
+        number_of_nodes = model.size ** 2  # LATTICE SPECIFIC!
+        cluster_sizes = map(lambda cluster: len(cluster) / number_of_nodes, clusters)
+        hist, bin_edges = numpy.histogram(list(cluster_sizes), bins=bins, range=(0, 1))
+        cluster_size_histogram = hist.tolist()
+        cluster_size_histogram = {
+            size: count
+            for size, count in enumerate(cluster_size_histogram)
+            if count > 0
+        }
+        return cluster_size_histogram
+
+    def _get_average_cluster_size(self, model) -> float:
+
+        average_size = 0
+        clusters = model.observables["clusters"]
+        cluster_sizes = map(lambda cluster: len(cluster), clusters)
+        average_size = sum(cluster_sizes) / len(clusters)
+        return average_size / model.size ** 2  # LATTICE SPECIFIC!
+
+    def _get_stats_for_model(self, model):
+
+        has_percolated = self._get_has_percolated(model)
+        cluster_size_histogram = self._get_cluster_size_histogram(model)
+        average_cluster_size = self._get_average_cluster_size(model)
+        return dict(
+            has_percolated=self._get_has_percolated(model),
+            cluster_size_histogram=json.dumps(cluster_size_histogram),
+            average_cluster_size=average_cluster_size,
+        )
 
     def _map_row_to_model(self, row):
         return Percolatation2DSquareModel.from_db(row)
@@ -194,6 +244,7 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
 
             mysql.execute(self._get_write_query(), model)
         except IntegrityError as err:
+            # Never reached since we have ON DUPLICATE KEY
             if int(err.errno) == 1062:
                 logger.info(
                     "Parent ID %s already exists. Skipping.",
@@ -252,10 +303,10 @@ class PercolationDequeuer:
         self._config = DequeuerConfig
         self._queue_env = self._config.ENV
         self._queues_processors = [
-            (
-                Percolation2DSquareQueue(self._queue_env),
-                Percolation2DSimulationProcessor(),
-            ),
+            # (
+            #     Percolation2DSquareQueue(self._queue_env),
+            #     Percolation2DSimulationProcessor(),
+            # ),
             (
                 Percolation2DSquareStatsQueue(self._queue_env),
                 Percolation2DSquareStatsProcessor(),

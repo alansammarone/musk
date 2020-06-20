@@ -2,11 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+*.env
 *.prof
-.DS_Store
+*.DS_Store
 
 data/
+roles/
 # C extensions
 *.so
 
