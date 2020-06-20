@@ -246,6 +246,15 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
     def _map_row_to_model(self, row):
         return Percolatation2DSquareModel.from_db(row)
 
+    def _insert_stats_models(self, models, mysql):
+        start = datetime.now()
+        for model in models:
+            self._try_and_insert_model(model, mysql)
+        end = datetime.now()
+        took = round((end - start).total_seconds(), 2)
+
+        logger.info(f"Inserting chunk took {took}s.")
+
     def _try_and_insert_model(self, model, mysql):
         try:
 
@@ -262,32 +271,50 @@ class Percolation2DSquareStatsProcessor(SQSMessageProcessor):
 
     def process(self, message):
         parameters = message.body["parameters"]
+
         mysql = MySQL()
         query = self._get_fetch_query()
+        query_start = datetime.now()
         mysql_rows = mysql.fetch(query, parameters)
+        query_end = datetime.now()
+        query_took = (query_end - query_start).total_seconds()
+        logger.info(f"Stats query took {query_took}s.")
         models = map(self._map_row_to_model, mysql_rows)
-        stats_models = []
-        count = 0
+        stats_models_chunk = []
+        chunk_size = 0
+        total_count = 0
+        max_chunk_size = 4000
+        chunk_took = 0
+
         for model in models:
 
             start = datetime.now()
             stats_field = self._get_stats_for_model(model)
             end = datetime.now()
+            took = (end - start).total_seconds()
+            chunk_took += took
             stats_model = dict(
                 percolation_2d_square_id=model.id,
                 size=model.size,
                 probability=model.probability,
                 created=datetime.now(),
-                took=(end - start).total_seconds(),
+                took=took,
                 **stats_field,
             )
-            stats_models.append(stats_model)
-            count += 1
+            stats_models_chunk.append(stats_model)
+            chunk_size += 1
+            total_count += 1
 
-        logger.info("Processed %s input models.", count)
+            if chunk_size >= max_chunk_size:
+                logger.info(f"Chunk processing took {chunk_took:.2f}s.")
+                self._insert_stats_models(stats_models_chunk, mysql)
+                stats_models_chunk = []
+                chunk_size = 0
 
-        for model in stats_models:
-            self._try_and_insert_model(model, mysql)
+        self._insert_stats_models(stats_models_chunk, mysql)
+        logger.info(f"Chunk processing took {chunk_took:.2f}s.")
+
+        logger.info("Processed %s input models.", total_count)
 
 
 class Percolation2DSimulationProcessor(SQSMessageProcessor):
