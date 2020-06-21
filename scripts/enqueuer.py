@@ -1,13 +1,5 @@
-from musk.core.sqs import SQSQueue
 from musk.core.sql import MySQL
-
-
-class Percolation2DSquare(SQSQueue):
-    name = "percolation_2d_square"
-
-
-class Percolation2DSquareStatsQueue(SQSQueue):
-    name = "percolation_2d_square_stats"
+from musk.percolation import PS2Queue, PS2StatsQueue
 
 
 def get_all_sizes_and_probabilities():
@@ -30,8 +22,8 @@ env = "dev"
 if type_ == "simulation":
     for p in range(550, 650):
         # for p in range(45, 75):
-        template = dict(parameters=dict(probability=p / 1000, size=512), repeat=32,)
-        Percolation2DSquare(env).write([template] * 10)
+        template = dict(parameters=dict(probability=p / 1000, size=16), repeat=4,)
+        PS2Queue(env).write([template] * 10)
 
 elif type_ == "stats":
 
@@ -43,4 +35,4 @@ elif type_ == "stats":
         probability = row["probability"]
         template = dict(parameters=dict(probability=probability))
         print(f"Sending {template}")
-        Percolation2DSquareStatsQueue(env).write([template])
+        PS2StatsQueue(env).write([template])
