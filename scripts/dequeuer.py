@@ -339,10 +339,10 @@ class PercolationDequeuer:
         self._config = DequeuerConfig
         self._queue_env = self._config.ENV
         self._queues_processors = [
-            # (
-            #     Percolation2DSquareQueue(self._queue_env),
-            #     Percolation2DSimulationProcessor(),
-            # ),
+            (
+                Percolation2DSquareQueue(self._queue_env),
+                Percolation2DSimulationProcessor(),
+            ),
             (
                 Percolation2DSquareStatsQueue(self._queue_env),
                 Percolation2DSquareStatsProcessor(),
