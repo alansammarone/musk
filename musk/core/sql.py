@@ -1,11 +1,9 @@
 import logging
-import mysql.connector
 
+import mysql.connector
 from musk.config.config import MySQLConfig
 
 MySQLConnection = mysql.connector.connection.MySQLConnection
-
-logger = logging.getLogger(__file__)
 
 
 class MySQL:
@@ -16,6 +14,7 @@ class MySQL:
     def __init__(self):
         self._config = MySQLConfig
         self._connection = self._get_new_connection()
+        self._logger = logging.getLogger(__file__)
 
     def _get_connection_config(self) -> dict:
 
@@ -48,7 +47,7 @@ class MySQL:
             cursor.execute(query, parameters)
             self._connection.commit()
         except:
-            print(cursor.statement)
+            self._logger.debug(cursor.statement)
             self._connection.rollback()
             raise
         finally:

@@ -1,1 +1,1 @@
-from .config import MySQLConfig, DequeuerConfig
+from .config import Config, DequeuerConfig, LoggingConfig, MySQLConfig

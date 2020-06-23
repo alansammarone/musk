@@ -24,3 +24,9 @@ class DequeuerConfig(Config):
         MESSAGES_PER_READ: int = env.int("MESSAGES_PER_READ", 1)
         PROCESS_COUNT: int = env.int("PROCESS_COUNT", 1)
         ENV: str = env("ENV", "dev")
+
+
+class LoggingConfig(Config):
+
+    with env.prefixed("LOGGING_"):
+        CONFIG_FILEPATH: str = env("CONFIG_FILEPATH", "logging.yaml")

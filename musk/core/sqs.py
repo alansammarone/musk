@@ -2,9 +2,18 @@ import json
 import logging
 import time
 import uuid
+
 import boto3
 
 logger = logging.getLogger(__file__)
+
+
+class Queue:
+    pass
+
+
+class Message:
+    pass
 
 
 class SQSMessage:
@@ -17,15 +26,6 @@ class SQSMessage:
     # This is the SQS resource, needed when instatiating new messages
     # not coming directly from a queue resource
     _sqs = None
-
-    @classmethod
-    def from_serialized(cls, serialized):
-        if not cls._sqs:
-            cls._sqs = cls.get_new_sqs_resource()
-
-        sqs_message_instance = cls._sqs.Message(**serialized["init_args"])
-        sqs_message_instance.body = serialized["message_body"]
-        return cls(sqs_message_instance)
 
     @classmethod
     def get_new_sqs_resource(self):
@@ -71,7 +71,7 @@ class SQSMessage:
         )
 
 
-class SQSQueue:
+class SQSQueue(Queue):
 
     # These are all SQS queue properties
     sqs_message_retention_period: int = 60 * 60 * 24 * 4  # 4 Days

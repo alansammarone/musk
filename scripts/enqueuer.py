@@ -27,12 +27,14 @@ if type_ == "simulation":
 
 elif type_ == "stats":
 
-    combinations = list(get_all_probabilities())
-    import random
+    # combinations = list(get_all_probabilities())
+    # import random
 
-    random.shuffle(combinations)
-    for row in combinations:
-        probability = row["probability"]
-        template = dict(parameters=dict(probability=probability))
-        print(f"Sending {template}")
-        PS2StatsQueue(env).write([template])
+    # random.shuffle(combinations)
+    # for row in combinations:
+    #     probability = row["probability"]
+    #     template = dict(parameters=dict(probability=probability))
+    #     print(f"Sending {template}")
+    #     PS2StatsQueue(env).write([template])
+    template = dict(parameters=dict(size=32))
+    PS2StatsQueue(env).write([template])
