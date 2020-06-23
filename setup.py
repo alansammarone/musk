@@ -24,5 +24,6 @@ setuptools.setup(
         "mysql-connector-python",
         "pydantic",
         "boto3",
+        "pyyaml",
     ],
 )
