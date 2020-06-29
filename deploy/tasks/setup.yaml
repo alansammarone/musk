@@ -20,15 +20,9 @@
     chdir: "{{ base_path }}"
     virtualenv: "{{ venv_folder }}"
     virtualenv_command: /usr/local/bin/python3.7 -m venv {{ venv_folder }}
-    requirements: "requirements.txt"
-
-
-- name: Create virtualenv and install dependencies
-  pip:
     name: "."
     editable: yes
-    chdir: "{{ base_path }}"
-    virtualenv: "{{ venv_folder }}"
+
 
 
 

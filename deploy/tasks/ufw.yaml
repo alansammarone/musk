@@ -7,7 +7,7 @@
     default: deny
     direction: incoming
 
-- name: "ufw: Allow HTTP, HTTPS and Nginx"
+- name: "ufw: Allow SSH"
   ufw:
     rule: allow
     name: "{{ item }}"

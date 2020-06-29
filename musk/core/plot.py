@@ -28,9 +28,10 @@ class Plot:
         figure_parameters = self._get_figure_parameters()
         plt.figure(**figure_parameters)
 
-    def _plot_observations(self, X, Y, label):
+    def _plot_observations(self, X, Y, label, err):
         label_observation = f"{label} (Observation)"
-        plt.scatter(X, Y, label=label)
+        plt.errorbar(X, Y, yerr=err, fmt="o", label=label)
+        # plt.scatter(X, Y, label=label)
 
     def _get_fit_label(self, base_label, fit_parameters):
         string_reprs = []
@@ -66,8 +67,8 @@ class Plot:
             return self.FIGURE_QUALITY_MAP[self.figure_quality]
         raise ValueError
 
-    def plot(self, X, Y, label, fit_fn=None):
-        self._plot_observations(X, Y, label)
+    def plot(self, X, Y, label, fit_fn=None, err=None):
+        self._plot_observations(X, Y, label, err)
         if fit_fn:
             self._plot_fit(X, Y, fit_fn, label)
 

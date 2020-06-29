@@ -48,6 +48,7 @@ class MySQL:
             self._connection.commit()
         except:
             self._logger.debug(cursor.statement)
+            self._logger.debug(parameters)
             self._connection.rollback()
             raise
         finally:

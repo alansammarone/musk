@@ -1,6 +1,15 @@
 from .percolation_square_2d import (
-    PS2Processor,
-    PS2Queue,
-    PS2StatsProcessor,
-    PS2StatsQueue,
+    P2SModel,
+    P2SProcessor,
+    P2SQueue,
+    P2SStatsProcessor,
+    P2SStatsQueue,
+)
+
+from .percolation_1d import (
+    P1LModel,
+    P1LProcessor,
+    P1LQueue,
+    P1LStatsProcessor,
+    P1LStatsQueue,
 )

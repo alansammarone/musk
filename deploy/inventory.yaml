@@ -1,6 +1,29 @@
 all:
-  hosts:
+  children:
     workers:
-      ansible_host: 134.209.84.224
-      ansible_user: root
-      ansible_python_interpreter: /usr/bin/python3
+      hosts:
+        worker1:
+          ansible_host: 159.69.0.88
+          ansible_user: root
+          ansible_python_interpreter: /usr/bin/python3
+        worker2:
+          ansible_host: 159.69.1.142
+          ansible_user: root
+          ansible_python_interpreter: /usr/bin/python3
+        worker3:
+          ansible_host: 94.130.109.111
+          ansible_user: root
+          ansible_python_interpreter: /usr/bin/python3
+        # worker4:
+        #   ansible_host: 78.46.212.213
+        #   ansible_user: root
+        #   ansible_python_interpreter: /usr/bin/python3
+        # worker5(mysql):
+        #   ansible_host: 159.69.87.40
+        #   ansible_user: root
+        #   ansible_python_interpreter: /usr/bin/python3
+
+
+
+
+# csshx root@94.130.109.111 root@88.99.169.180 root@116.203.239.234 root@78.46.212.213
