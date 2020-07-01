@@ -215,7 +215,7 @@ class PercolationStatsProcessor(Processor):
         clusters = model.observables["clusters"]
         number_of_nodes = self.lattice.get_number_of_nodes()
         cluster_sizes = map(lambda cluster: len(cluster) / number_of_nodes, clusters)
-        print(cluster_sizes)
+
         hist, bin_edges = numpy.histogram(list(cluster_sizes), bins=bins, range=(0, 1))
         cluster_size_histogram = hist.tolist()
         cluster_size_histogram = {
@@ -223,7 +223,7 @@ class PercolationStatsProcessor(Processor):
             for size, count in enumerate(cluster_size_histogram)
             if count > 0
         }
-        print(cluster_size_histogram)
+
         return cluster_size_histogram
 
     def _get_average_cluster_size(self, model) -> float:
