@@ -231,9 +231,15 @@ class PercolationStatsProcessor(Processor):
         average_size = 0
         clusters = model.observables["clusters"]
         cluster_sizes = map(lambda cluster: len(cluster), clusters)
-        average_size = sum(cluster_sizes) / len(clusters)
-        number_of_nodes = self.lattice.get_number_of_nodes()
-        return average_size / number_of_nodes
+        try:
+            # Warning: We're assuming that no clusters
+            # means average_size = 0
+            average_size = sum(cluster_sizes) / len(clusters)
+            number_of_nodes = self.lattice.get_number_of_nodes()
+            average_size = average_size / number_of_nodes
+        except ZeroDivisionError:
+            pass
+        return average_size
 
     def _get_stats_for_model(self, model):
 
