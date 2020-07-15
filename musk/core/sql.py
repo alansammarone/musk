@@ -4,6 +4,7 @@ import mysql.connector
 from musk.config.config import MySQLConfig
 
 MySQLConnection = mysql.connector.connection.MySQLConnection
+import pymysql
 
 
 class MySQL:
@@ -17,7 +18,15 @@ class MySQL:
         self._logger = logging.getLogger(__file__)
 
     def _get_connection_config(self) -> dict:
-
+        return dict(
+            host=self._config.HOST,
+            port=self._config.PORT,
+            user=self._config.USER,
+            password=self._config.PASSWORD,
+            database=self._config.DATABASE,
+            connect_timeout=self._config.CONNECTION_TIMEOUT,
+            autocommit=True,
+        )
         return dict(
             host=self._config.HOST,
             port=self._config.PORT,
@@ -31,13 +40,13 @@ class MySQL:
 
     def _get_new_connection(self) -> MySQLConnection:
         config = self._get_connection_config()
-        connection = mysql.connector.connect(**config)
+        connection = pymysql.connect(**config)
         return connection
 
     def fetch(self, query: str, parameters: tuple = ()):
-        cursor = self._connection.cursor(dictionary=True)
+        cursor = self._connection.cursor(pymysql.cursors.SSDictCursor)
         cursor.execute(query, parameters)
-        for row in cursor:
+        for row in cursor.fetchall_unbuffered():
             yield row
         cursor.close()
 

@@ -1,4 +1,5 @@
 import bz2
+import itertools
 import json
 import warnings
 from dataclasses import asdict
@@ -66,6 +67,7 @@ class PercolationModel:
 
     @classmethod
     def from_db(cls, row: dict):
+        row = row.copy()  # Don't change original row
         row["observables"] = bz2.decompress(row["observables"])
         row["observables"] = json.loads(
             row["observables"], object_hook=as_python_object
@@ -93,6 +95,7 @@ class PercolationStatsModel:
     has_percolated: bool
     average_cluster_size: float
     cluster_size_histogram: dict
+    average_correlation_length: float
     took: float
     created: datetime
 
@@ -104,7 +107,8 @@ class PercolationStatsModel:
             INSERT INTO {cls._tablename} (simulation_id, size, probability,
                 has_percolated, cluster_size_histogram, average_cluster_size, created, took)
             VALUES (%(simulation_id)s, %(size)s, %(probability)s, %(has_percolated)s,
-                %(cluster_size_histogram)s, %(average_cluster_size)s, %(created)s, %(took)s)
+                %(cluster_size_histogram)s, %(average_cluster_size)s, $(average_correlation_length),
+                %(created)s, %(took)s)
             ON DUPLICATE KEY UPDATE
             has_percolated = %(has_percolated)s,
             cluster_size_histogram = %(cluster_size_histogram)s,
@@ -195,12 +199,10 @@ class PercolationProcessor(Processor):
 
 class PercolationStatsProcessor(Processor):
 
-    CHUNK_SIZE = 1000
+    CHUNK_SIZE = 100
 
     def _get_has_percolated(self, model) -> bool:
         clusters = model.observables["clusters"]
-        LatticeClass = self._get_lattice_class()
-
         boundaries = self.lattice.get_boundaries()
         top_boundary, bottom_boundary = list(boundaries)
         has_percolated = False
@@ -209,6 +211,39 @@ class PercolationStatsProcessor(Processor):
                 has_percolated = True
                 break
         return has_percolated
+
+    def _get_cluster_correlation_length(self, cluster) -> float:
+        correlation_length, n_combinations = 0, 0
+        combinations = list(itertools.combinations(cluster, 2))
+
+        for node1, node2 in combinations:
+            x1, y1 = node1
+            x2, y2 = node2
+            distance = (y2 - y1) ** 2 + (x2 - x1) ** 2
+            correlation_length += distance
+            n_combinations += 1
+
+        return correlation_length / n_combinations
+
+    def _get_average_correlation_length(self, model) -> float:
+        clusters = model.observables["clusters"]
+        top_boundary, bottom_boundary = self.lattice.get_boundaries()
+        average = 0
+        for cluster in clusters:
+            cluster_size = len(cluster)
+
+            has_percolated = bool(
+                cluster_size >= self.lattice.get_size()
+                and (cluster & top_boundary)
+                and (cluster & bottom_boundary)
+            )
+            if has_percolated:
+                continue
+            if cluster_size == 1:
+                continue
+            average += self._get_cluster_correlation_length(cluster)
+
+        return average / len(clusters)
 
     def _get_cluster_size_histogram(self, model) -> list:
         bins = 10000
@@ -246,10 +281,12 @@ class PercolationStatsProcessor(Processor):
         has_percolated = self._get_has_percolated(model)
         cluster_size_histogram = self._get_cluster_size_histogram(model)
         average_cluster_size = self._get_average_cluster_size(model)
+        average_correlation_length = self._get_average_correlation_length(model)
         return dict(
             has_percolated=has_percolated,
             cluster_size_histogram=cluster_size_histogram,
             average_cluster_size=average_cluster_size,
+            average_correlation_length=average_correlation_length,
         )
 
     def _get_simulation_model_class(self):

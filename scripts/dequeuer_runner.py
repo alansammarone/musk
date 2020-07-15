@@ -59,9 +59,9 @@ if __name__ == "__main__":
     queue_env = DequeuerConfig.ENV
 
     dequeuers = [
-        # Dequeuer(P2SQueue(queue_env), P2SProcessor()),
-        # Dequeuer(P2SStatsQueue(queue_env), P2SStatsProcessor()),
-        Dequeuer(P1LQueue(queue_env), P1LProcessor()),
-        Dequeuer(P1LStatsQueue(queue_env), P1LStatsProcessor()),
+        Dequeuer(P2SQueue(queue_env), P2SProcessor()),
+        Dequeuer(P2SStatsQueue(queue_env), P2SStatsProcessor()),
+        # Dequeuer(P1LQueue(queue_env), P1LProcessor()),
+        # Dequeuer(P1LStatsQueue(queue_env), P1LStatsProcessor()),
     ]
     DequeuerRunner(dequeuers).dequeue()

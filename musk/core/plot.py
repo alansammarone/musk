@@ -45,8 +45,11 @@ class Plot:
 
     def _plot_fit(self, X, Y, fit_fn, label):
         parameters, _ = curve_fit(fit_fn, X, Y)
+
         label = self._get_fit_label(label, parameters)
         X_fit = np.linspace(min(X), max(X), 100)
+        print(parameters)
+        print(fit_fn(X_fit, *parameters))
         plt.plot(X_fit, fit_fn(X_fit, *parameters), "--", label=label)
 
     def _add_labels(self, xlabel, ylabel):
