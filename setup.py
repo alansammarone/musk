@@ -25,5 +25,6 @@ setuptools.setup(
         "pydantic",
         "boto3",
         "pyyaml",
+        "PyMySQL[rsa]",
     ],
 )
