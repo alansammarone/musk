@@ -113,7 +113,7 @@ class PercolationStatsModel:
             has_percolated = %(has_percolated)s,
             cluster_size_histogram = %(cluster_size_histogram)s,
             average_cluster_size = %(average_cluster_size)s,
-            average_correlation_length = %(average_correlation_length);
+            average_correlation_length = %(average_correlation_length)s;
 
         """
 
