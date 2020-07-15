@@ -13,7 +13,7 @@ from musk.percolation import (
 
 model = "square_2d"
 type_ = "stats"
-env = "dev"
+env = "prod"
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (
@@ -59,12 +59,19 @@ if type_ == "simulation":
 elif type_ == "stats":
 
     combinations = list(get_all_sizes_and_probabilities())
-    random.shuffle(combinations)
+    # combinations = list(get_all_probabilities())
+    combinations = get_all_probabilities()
+
+    # random.shuffle(combinations)
     for row in combinations:
+        print(row)
         probability = row["probability"]
-        size = row["size"]
+        # size = row["size"]
+        size = 32
         template = dict(parameters=dict(probability=probability, size=size))
-        print(f"Sending {template}")
+        # template = dict(parameters=dict(size=32))
+
         stats_queue.write([template])
+
     # template = dict(parameters=dict(size=512))
     # PS2StatsQueue(env).write([template])
