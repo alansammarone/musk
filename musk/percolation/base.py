@@ -107,7 +107,7 @@ class PercolationStatsModel:
             INSERT INTO {cls._tablename} (simulation_id, size, probability,
                 has_percolated, cluster_size_histogram, average_cluster_size, created, took)
             VALUES (%(simulation_id)s, %(size)s, %(probability)s, %(has_percolated)s,
-                %(cluster_size_histogram)s, %(average_cluster_size)s, %(average_correlation_length),
+                %(cluster_size_histogram)s, %(average_cluster_size)s, %(average_correlation_length)s,
                 %(created)s, %(took)s)
             ON DUPLICATE KEY UPDATE
             has_percolated = %(has_percolated)s,
