@@ -323,10 +323,10 @@ class PercolationStatsProcessor(Processor):
             min_id, self.CHUNK_SIZE, **parameters
         )
         query_start = datetime.now()
-        mysql_rows = mysql.fetch(query, parameters)
+        mysql_rows = list(mysql.fetch(query, parameters))
         query_end = datetime.now()
         query_took = (query_end - query_start).total_seconds()
-        self._logger.debug(f"Stats query took {query_took}s.")
+        self._logger.debug(f"Stats simulation query took {query_took}s.")
         return mysql_rows
 
     def _process_model_chunk(self, chunk, parameters):
