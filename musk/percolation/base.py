@@ -214,7 +214,7 @@ class PercolationStatsProcessor(Processor):
 
     def _get_cluster_correlation_length(self, cluster) -> float:
         correlation_length, n_combinations = 0, 0
-        combinations = list(itertools.combinations(cluster, 2))
+        combinations = itertools.combinations(cluster, 2)
 
         for node1, node2 in combinations:
             x1, y1 = node1
