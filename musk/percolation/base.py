@@ -364,6 +364,7 @@ class PercolationStatsProcessor(Processor):
             self._process_model_chunk(simulation_models_chunk, parameters)
             total_count += len(simulation_models_chunk)
             results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
+            self._logger.info("Processed %s input models.", total_count)
 
         # simulation_rows = list(self._get_simulation_rows(parameters, max_id_seen))
         # simulation_models = map(self._map_row_to_model, simulation_rows)
@@ -374,5 +375,4 @@ class PercolationStatsProcessor(Processor):
         # for chunk in stats_models_chunk:
         #     self._process_model_chunk(chunk, parameters)
         #     total_count += len(chunk)
-
-        self._logger.info("Processed %s input models.", total_count)
+        self._logger.info("Finished %s input models.", total_count)
