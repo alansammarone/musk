@@ -346,6 +346,7 @@ class PercolationStatsProcessor(Processor):
                 took=took,
                 **stats_field,
             )
+            chunk_took += took
             stats_models.append(stats_model)
         self._logger.info(f"Chunk processing took {chunk_took:.2f}s.")
         self._insert_stats_models(stats_models)
