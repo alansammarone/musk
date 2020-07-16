@@ -348,7 +348,7 @@ class PercolationStatsProcessor(Processor):
         parameters = message.body["parameters"]
         LatticeClass = self._get_lattice_class()
         self.lattice = LatticeClass(parameters["size"])
-        simulation_rows = self._get_simulation_rows(parameters)
+        simulation_rows = list(self._get_simulation_rows(parameters))
         simulation_models = map(self._map_row_to_model, simulation_rows)
         stats_models_chunk = Misc.chunkenize(simulation_models, self.CHUNK_SIZE)
         total_count = 0
