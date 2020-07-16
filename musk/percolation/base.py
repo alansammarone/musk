@@ -38,7 +38,7 @@ class PercolationModel:
         return query
 
     @classmethod
-    def get_select_query_with_filters(cls, probability=None, size=None):
+    def get_select_query_with_filters(cls, min_id, limit, probability=None, size=None):
 
         if probability:
             probability_filter = "round(probability, 6) = %(probability)s"
@@ -59,10 +59,14 @@ class PercolationModel:
         else:
             raise ValueError("Unexpected combination")
 
+        where_clause = f"{where_clause} AND id > {min_id}"
+        limit_clause = f"LIMIT {limit}"
+
         return f"""
             SELECT id, probability, size, observables, took, created
             FROM {cls._tablename}
             {where_clause}
+            {limit_clause}
         """
 
     @classmethod
@@ -199,7 +203,7 @@ class PercolationProcessor(Processor):
 
 class PercolationStatsProcessor(Processor):
 
-    CHUNK_SIZE = 100
+    CHUNK_SIZE = 200
 
     def _get_has_percolated(self, model) -> bool:
         clusters = model.observables["clusters"]
@@ -312,10 +316,12 @@ class PercolationStatsProcessor(Processor):
 
         self._logger.info(f"Inserting chunk took {took}s.")
 
-    def _get_simulation_rows(self, parameters):
+    def _get_simulation_rows(self, parameters, min_id):
         mysql = MySQL()
         SimulationModelClass = self._get_simulation_model_class()
-        query = SimulationModelClass.get_select_query_with_filters(**parameters)
+        query = SimulationModelClass.get_select_query_with_filters(
+            min_id, self.CHUNK_SIZE, **parameters
+        )
         query_start = datetime.now()
         mysql_rows = mysql.fetch(query, parameters)
         query_end = datetime.now()
@@ -348,12 +354,23 @@ class PercolationStatsProcessor(Processor):
         parameters = message.body["parameters"]
         LatticeClass = self._get_lattice_class()
         self.lattice = LatticeClass(parameters["size"])
-        simulation_rows = list(self._get_simulation_rows(parameters))
-        simulation_models = map(self._map_row_to_model, simulation_rows)
-        stats_models_chunk = Misc.chunkenize(simulation_models, self.CHUNK_SIZE)
+        max_id_seen = 0
         total_count = 0
-        for chunk in stats_models_chunk:
-            self._process_model_chunk(chunk, parameters)
-            total_count += len(chunk)
+        results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
+        while results_chunk:
+            simulation_models_chunk = list(map(self._map_row_to_model, results_chunk))
+            max_id_seen = max(map(lambda model: model.id, simulation_models_chunk))
+            self._process_model_chunk(simulation_models_chunk, parameters)
+            total_count += len(simulation_models_chunk)
+
+        # simulation_rows = list(self._get_simulation_rows(parameters, max_id_seen))
+        # simulation_models = map(self._map_row_to_model, simulation_rows)
+        # # stats_models_chunk = Misc.chunkenize(simulation_models, self.CHUNK_SIZE)
+
+        # stats_models_chunk
+        # total_count = 0
+        # for chunk in stats_models_chunk:
+        #     self._process_model_chunk(chunk, parameters)
+        #     total_count += len(chunk)
 
         self._logger.info("Processed %s input models.", total_count)
