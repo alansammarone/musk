@@ -203,7 +203,7 @@ class PercolationProcessor(Processor):
 
 class PercolationStatsProcessor(Processor):
 
-    CHUNK_SIZE = 300
+    CHUNK_SIZE = 1024
 
     def _get_has_percolated(self, model) -> bool:
         clusters = model.observables["clusters"]
