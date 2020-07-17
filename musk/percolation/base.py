@@ -329,12 +329,13 @@ class PercolationStatsProcessor(Processor):
         self._logger.debug(f"Stats simulation query took {query_took}s.")
         return mysql_rows
 
-    def _process_model_chunk(self, chunk, parameters):
+    def _process_simulation_chunk(self, chunk, parameters):
         chunk_took = 0
         stats_models = []
         StatsModelClass = self._get_stats_model_class()
-        for model in chunk:
+        for result in chunk:
             start = datetime.now()
+            model = self._map_row_to_model(result)
             stats_field = self._get_stats_for_model(model)
             end = datetime.now()
             took = (end - start).total_seconds()
@@ -360,8 +361,8 @@ class PercolationStatsProcessor(Processor):
         results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
         while results_chunk:
 
-            max_id_seen = max(map(lambda result: model['id, simulation_models_chunk))
-            self._process_model_chunk(simulation_models_chunk, parameters)
+            max_id_seen = max(map(lambda result: result["id"], results_chunk))
+            self._process_simulation_chunk(results_chunk, parameters)
             total_count += len(simulation_models_chunk)
             results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
             self._logger.info("Processed %s input models.", total_count)
