@@ -203,7 +203,7 @@ class PercolationProcessor(Processor):
 
 class PercolationStatsProcessor(Processor):
 
-    CHUNK_SIZE = 512
+    CHUNK_SIZE = 300
 
     def _get_has_percolated(self, model) -> bool:
         clusters = model.observables["clusters"]
@@ -359,8 +359,8 @@ class PercolationStatsProcessor(Processor):
         total_count = 0
         results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
         while results_chunk:
-            simulation_models_chunk = list(map(self._map_row_to_model, results_chunk))
-            max_id_seen = max(map(lambda model: model.id, simulation_models_chunk))
+
+            max_id_seen = max(map(lambda result: model['id, simulation_models_chunk))
             self._process_model_chunk(simulation_models_chunk, parameters)
             total_count += len(simulation_models_chunk)
             results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
