@@ -363,17 +363,7 @@ class PercolationStatsProcessor(Processor):
 
             max_id_seen = max(map(lambda result: result["id"], results_chunk))
             self._process_simulation_chunk(results_chunk, parameters)
-            total_count += len(simulation_models_chunk)
+            total_count += len(results_chunk)
             results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
             self._logger.info("Processed %s input models.", total_count)
-
-        # simulation_rows = list(self._get_simulation_rows(parameters, max_id_seen))
-        # simulation_models = map(self._map_row_to_model, simulation_rows)
-        # # stats_models_chunk = Misc.chunkenize(simulation_models, self.CHUNK_SIZE)
-
-        # stats_models_chunk
-        # total_count = 0
-        # for chunk in stats_models_chunk:
-        #     self._process_model_chunk(chunk, parameters)
-        #     total_count += len(chunk)
         self._logger.info("Finished %s input models.", total_count)
