@@ -60,22 +60,18 @@ elif type_ == "stats":
 
     combinations = list(get_all_sizes_and_probabilities())
     # combinations = list(get_all_probabilities())
-    # combinations = list(get_all_probabilities())
 
-    # random.shuffle(combinations)
+    random.shuffle(combinations)
     for row in combinations:
         # print(row)
         probability = row["probability"]
         size = row["size"]
         # size = 32
-        if size != 32:
+        # if not size in [64, 128, 256]:
+        if not size in [32]:
             continue
-
         template = dict(parameters=dict(probability=probability, size=size))
         print(template)
         # template = dict(parameters=dict(size=32))
 
         stats_queue.write([template])
-
-    # template = dict(parameters=dict(size=512))
-    # PS2StatsQueue(env).write([template])

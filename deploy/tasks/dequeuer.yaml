@@ -12,6 +12,10 @@
     group: root
     mode: 0644
 
+# - name: Kill running process
+#   shell: "ps -ef | grep -v grep | grep -w {{ PROCESS }} | awk '{print $2}'"
+#   register: running_processes    
+
 - name: Set crontab job
   cron:
     job: '

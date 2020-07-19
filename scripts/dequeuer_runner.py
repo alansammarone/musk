@@ -2,6 +2,8 @@ import sys
 import concurrent.futures
 import logging
 import multiprocessing
+import signal
+import time
 from typing import List
 
 from musk.config import DequeuerConfig
@@ -21,16 +23,34 @@ from musk.misc.logging import setup_logging
 setup_logging()  # This will also be called from child processes
 
 
+class GracefulKiller:
+    kill_now = False
+
+    def __init__(self):
+        self._logger = logging.getLogger(__name__)
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+    def exit_gracefully(self, signum, frame):
+        self._logger.info("Received signal to exit gracefully.")
+        self.kill_now = True
+
+
 def async_wrapper(dequeuers: List[Dequeuer]):
     logger = logging.getLogger("root.async_wrapper")
-
-    while True:
+    sleep_for_seconds = 10
+    killer = GracefulKiller()
+    while not killer.kill_now:
         for dequeuer in dequeuers:
             try:
                 dequeuer.dequeue()
             except:
                 logger.exception("Exception in worker: ")
                 sys.exit(0)
+
+        time.sleep(sleep_for_seconds)
+
+    logger.info("Exiting gracefully.")
 
 
 class DequeuerRunner:
@@ -41,11 +61,11 @@ class DequeuerRunner:
         self._dequeuers = dequeuers
         self._config = DequeuerConfig
         self._cpu_count = self._config.PROCESS_COUNT
-        self._logger = logging.getLogger(__file__)
+        self._logger = logging.getLogger(__name__)
 
     def dequeue(self) -> None:
 
-        self._logger.debug("Restarting pool.")
+        self._logger.debug("Starting pool")
         pool = concurrent.futures.ProcessPoolExecutor(
             max_workers=self._cpu_count,
             mp_context=multiprocessing.get_context(self.MP_CONTEXT),
