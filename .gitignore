@@ -5,6 +5,8 @@ __pycache__/
 *.env
 *.prof
 *.DS_Store
+tags
+
 
 data/
 roles/
@@ -16,6 +18,8 @@ roles/
 build/
 develop-eggs/
 dist/
+tests/
+
 downloads/
 eggs/
 .eggs/

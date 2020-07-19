@@ -120,6 +120,20 @@ class PercolationStatsModel:
             average_correlation_length = %(average_correlation_length)s
         """
 
+    @classmethod
+    def get_update_query(cls, key: tuple, attributes: dict) -> str:
+
+        key_name, key_value = key
+        update_strings = [f"{key} = %({key})s" for key in attributes]
+        update_string = ",\n".join(update_strings)
+
+        query = f"""
+            UPDATE {cls._tablename}
+            SET {update_string}
+            WHERE {key_name} = %({key_name})s
+        """
+        return query
+
     def to_db(self):
 
         model_dict = asdict(self)
@@ -166,6 +180,9 @@ class PercolationSimulation(Simulation):
 
     def _get_insert_query(self) -> str:
         return self._get_model_class().get_insert_query()
+
+    def _get_update_query(self) -> str:
+        return self._get_model_class().get_update_query()
 
     def run(self):
         LatticeClass = self._get_lattice_class()
@@ -280,17 +297,30 @@ class PercolationStatsProcessor(Processor):
             pass
         return average_size
 
-    def _get_stats_for_model(self, model):
+    def _get_percolating_cluster_strength(self, model) -> float:
+        clusters = model.observables["clusters"]
+        top_boundary, bottom_boundary = self.lattice.get_boundaries()
+        for cluster in clusters:
+            cluster_size = len(cluster)
 
-        has_percolated = self._get_has_percolated(model)
-        cluster_size_histogram = self._get_cluster_size_histogram(model)
-        average_cluster_size = self._get_average_cluster_size(model)
-        average_correlation_length = self._get_average_correlation_length(model)
+            has_percolated = bool(
+                cluster_size >= self.lattice.get_size()
+                and (cluster & top_boundary)
+                and (cluster & bottom_boundary)
+            )
+            if not has_percolated:
+                continue
+
+            return cluster_size / self.lattice.get_number_of_nodes()
+        return 0
+
+    def _get_stats_for_model(self, model):
         return dict(
-            has_percolated=has_percolated,
-            cluster_size_histogram=cluster_size_histogram,
-            average_cluster_size=average_cluster_size,
-            average_correlation_length=average_correlation_length,
+            # has_percolated=self._get_has_percolated(model),
+            # cluster_size_histogram=self._get_cluster_size_histogram(model),
+            # average_cluster_size=self._get_average_cluster_size(model),
+            # average_correlation=self._get_average_correlation_length(model),
+            percolating_cluster_strength=self._get_percolating_cluster_strength(model)
         )
 
     def _get_simulation_model_class(self):
@@ -313,8 +343,22 @@ class PercolationStatsProcessor(Processor):
             mysql.execute(StatsModelClass.get_insert_query(), model.to_db())
         end = datetime.now()
         took = round((end - start).total_seconds(), 2)
-
         self._logger.info(f"Inserting chunk took {took}s.")
+
+    def _update_stats_models(self, models_as_dict):
+        mysql = MySQL()
+        start = datetime.now()
+        StatsModelClass = self._get_stats_model_class()
+        for model_dict in models_as_dict:
+            mysql.execute(
+                StatsModelClass.get_update_query(
+                    (["simulation_id", model_dict["simulation_id"]]), model_dict
+                ),
+                model_dict,
+            )
+        end = datetime.now()
+        took = round((end - start).total_seconds(), 2)
+        self._logger.info(f"Update chunk took {took}s.")
 
     def _get_simulation_rows(self, parameters, min_id):
         mysql = MySQL()
@@ -337,20 +381,22 @@ class PercolationStatsProcessor(Processor):
             start = datetime.now()
             model = self._map_row_to_model(result)
             stats_field = self._get_stats_for_model(model)
+            stats_field["simulation_id"] = model.id
             end = datetime.now()
             took = (end - start).total_seconds()
-            stats_model = StatsModelClass(
-                simulation_id=model.id,
-                size=model.size,
-                probability=model.probability,
-                created=datetime.now(),
-                took=took,
-                **stats_field,
-            )
+            # stats_model = StatsModelClass(
+            #     simulation_id=model.id,
+            #     size=model.size,
+            #     probability=model.probability,
+            #     created=datetime.now(),
+            #     took=took,
+            #     **stats_field,
+            # )
+            stats_models.append(stats_field)
             chunk_took += took
-            stats_models.append(stats_model)
+            stats_models.append(stats_field)
         self._logger.info(f"Chunk processing took {chunk_took:.2f}s.")
-        self._insert_stats_models(stats_models)
+        self._update_stats_models(stats_models)
 
     def process(self, message: Message):
         parameters = message.body["parameters"]

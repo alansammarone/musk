@@ -58,16 +58,18 @@ if type_ == "simulation":
 
 elif type_ == "stats":
 
-    # combinations = list(get_all_sizes_and_probabilities())
+    combinations = list(get_all_sizes_and_probabilities())
     # combinations = list(get_all_probabilities())
-    combinations = list(get_all_probabilities())
+    # combinations = list(get_all_probabilities())
 
     # random.shuffle(combinations)
     for row in combinations:
         # print(row)
         probability = row["probability"]
-        # size = row["size"]
-        size = 32
+        size = row["size"]
+        # size = 32
+        if size >= 128:
+            continue
         template = dict(parameters=dict(probability=probability, size=size))
         print(template)
         # template = dict(parameters=dict(size=32))
