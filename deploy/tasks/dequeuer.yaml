@@ -13,10 +13,10 @@
     mode: 0644
 
 - name: Send SIGTERM to dequeuer processes
-  shell: "pkill -f dequeuer"
-  register: killed_process
-  changed_when: killed_process.rc == 1
-  failed_when: killed_process.rc not in [0,1]  
+  command: pkill -f dequeuer
+  register: result
+  changed_when: result.rc == 0
+  failed_when: result.rc not in [0,1]  
 
 - name: Set crontab job
   cron:
