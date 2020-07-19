@@ -410,6 +410,9 @@ class PercolationStatsProcessor(Processor):
             max_id_seen = max(map(lambda result: result["id"], results_chunk))
             self._process_simulation_chunk(results_chunk, parameters)
             total_count += len(results_chunk)
-            results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
             self._logger.info("Processed %s input models.", total_count)
+            if len(results_chunk) < self.CHUNK_SIZE:
+                break
+            results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
+
         self._logger.info("Finished %s input models.", total_count)

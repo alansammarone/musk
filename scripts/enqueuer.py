@@ -13,7 +13,7 @@ from musk.percolation import (
 
 model = "square_2d"
 type_ = "stats"
-env = "dev"
+env = "prod"
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (
@@ -68,8 +68,9 @@ elif type_ == "stats":
         probability = row["probability"]
         size = row["size"]
         # size = 32
-        if size >= 128:
+        if size != 32:
             continue
+
         template = dict(parameters=dict(probability=probability, size=size))
         print(template)
         # template = dict(parameters=dict(size=32))
