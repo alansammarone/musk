@@ -13,7 +13,7 @@ from musk.percolation import (
 
 model = "square_2d"
 type_ = "stats"
-env = "prod"
+env = "dev"
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (

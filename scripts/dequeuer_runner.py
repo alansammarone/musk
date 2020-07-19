@@ -1,3 +1,4 @@
+import sys
 import concurrent.futures
 import logging
 import multiprocessing
@@ -22,11 +23,14 @@ setup_logging()  # This will also be called from child processes
 
 def async_wrapper(dequeuers: List[Dequeuer]):
     logger = logging.getLogger("root.async_wrapper")
-    for dequeuer in dequeuers:
-        try:
-            dequeuer.dequeue()
-        except:
-            logger.exception("Exception in worker: ")
+
+    while True:
+        for dequeuer in dequeuers:
+            try:
+                dequeuer.dequeue()
+            except:
+                logger.exception("Exception in worker: ")
+                sys.exit(0)
 
 
 class DequeuerRunner:
@@ -40,17 +44,16 @@ class DequeuerRunner:
         self._logger = logging.getLogger(__file__)
 
     def dequeue(self) -> None:
-        while True:
-            self._logger.debug("Restarting pool.")
-            pool = concurrent.futures.ProcessPoolExecutor(
-                max_workers=self._cpu_count,
-                mp_context=multiprocessing.get_context(self.MP_CONTEXT),
-            )
-            for _ in range(self._cpu_count):
-                future = pool.submit(async_wrapper, (self._dequeuers))
 
-            pool.shutdown(wait=True)
-            break
+        self._logger.debug("Restarting pool.")
+        pool = concurrent.futures.ProcessPoolExecutor(
+            max_workers=self._cpu_count,
+            mp_context=multiprocessing.get_context(self.MP_CONTEXT),
+        )
+        for _ in range(self._cpu_count):
+            future = pool.submit(async_wrapper, (self._dequeuers))
+
+        pool.shutdown(wait=True)
 
 
 if __name__ == "__main__":
