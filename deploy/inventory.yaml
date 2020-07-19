@@ -6,10 +6,10 @@ all:
           ansible_host: 159.69.81.189
           ansible_user: root
           ansible_python_interpreter: /usr/bin/python3
-        # worker2:
-        #   ansible_host: 78.46.205.169
-        #   ansible_user: root
-        #   ansible_python_interpreter: /usr/bin/python3
+        worker2:
+          ansible_host: 116.203.199.130
+          ansible_user: root
+          ansible_python_interpreter: /usr/bin/python3
         # worker3:
         #   ansible_host: 116.203.199.130
         #   ansible_user: root
