@@ -12,8 +12,8 @@ from musk.percolation import (
 
 
 model = "square_2d"
-type_ = "stats"
-env = "prod"
+type_ = "simulation"
+env = "dev"
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (
@@ -58,11 +58,11 @@ extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100
 
 if type_ == "simulation":
     p_range = extension_p_2d_range
+    random.shuffle(p_range)
     for p in p_range:
-        # for p in range(45, 75):
-        for size in [32]:
-            template = dict(parameters=dict(probability=p, size=size), repeat=256,)
-            simulation_queue.write([template] * 5)
+        for size in list(get_all_sizes()):
+            template = dict(parameters=dict(probability=p, size=size), repeat=128,)
+            simulation_queue.write([template] * 10)
 
 elif type_ == "stats":
 
@@ -74,10 +74,6 @@ elif type_ == "stats":
         # print(row)
         probability = row["probability"]
         size = row["size"]
-        # size = 32
-        # if not size in [64, 128, 256]:
-        if size in [32, 64, 128, 256]:
-            continue
         template = dict(parameters=dict(probability=probability, size=size))
         print(template)
         # template = dict(parameters=dict(size=32))

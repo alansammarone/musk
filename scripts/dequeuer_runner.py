@@ -28,7 +28,6 @@ class GracefulKiller:
 
     def __init__(self):
         self._logger = logging.getLogger(__name__)
-        signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
     def exit_gracefully(self, signum, frame):
@@ -50,22 +49,53 @@ class DequeuerRunner:
     MP_CONTEXT = "spawn"
 
     def __init__(self, dequeuers: List[Dequeuer]):
+        self._logger = logging.getLogger(__name__)
+
         self._dequeuers = dequeuers
         self._config = DequeuerConfig
-        self._cpu_count = self._config.PROCESS_COUNT
-        self._logger = logging.getLogger(__name__)
+
+        self._process_count = self._config.PROCESS_COUNT
+        self._processes = []
+
+        self._killer = GracefulKiller()
+
+        multiprocessing.set_start_method(self.MP_CONTEXT)
 
     def dequeue(self) -> None:
 
-        self._logger.debug("Starting pool")
-        pool = concurrent.futures.ProcessPoolExecutor(
-            max_workers=self._cpu_count,
-            mp_context=multiprocessing.get_context(self.MP_CONTEXT),
-        )
-        for _ in range(self._cpu_count):
-            future = pool.submit(async_wrapper, (self._dequeuers))
+        # self._logger.debug("Starting pool")
+        # pool = concurrent.futures.ProcessPoolExecutor(
+        #     max_workers=self._cpu_count,
+        #     mp_context=multiprocessing.get_context(self.MP_CONTEXT),
+        # )
+        # for _ in range(self._cpu_count):
+        #     future = pool.submit(async_wrapper, (self._dequeuers))
 
-        pool.shutdown(wait=True)
+        # pool.shutdown(wait=True)
+
+        while True:
+
+            if len(self._processes) < self._process_count:
+                self._processes.append(self._spawn_process())
+
+            dead_indexes = []
+            for index, process in enumerate(self._processes):
+                if not process.is_alive():
+                    process.close()
+                    dead_indexes.append(index)
+
+            for index in dead_indexes:
+                self._processes.pop(index)
+
+            if self._killer.kill_now:
+                break
+
+            time.sleep(2)
+
+    def _spawn_process(self) -> multiprocessing.Process:
+        process = multiprocessing.Process(target=async_wrapper, args=(self._dequeuers,))
+        process.start()
+        return process
 
 
 if __name__ == "__main__":

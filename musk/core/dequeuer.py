@@ -22,6 +22,7 @@ class Dequeuer:
             self._processor.process(message)
             message.delete()
         except BaseException:
+            self._logger("Exception in processor: ")
             message.requeue()
 
         end = datetime.now()
