@@ -1,10 +1,12 @@
 import logging
 
 import mysql.connector
+import pymysql
 from musk.config.config import MySQLConfig
 
 MySQLConnection = mysql.connector.connection.MySQLConnection
-import pymysql
+
+logging.captureWarnings(True)
 
 
 class MySQL:
@@ -26,20 +28,12 @@ class MySQL:
             database=self._config.DATABASE,
             connect_timeout=self._config.CONNECTION_TIMEOUT,
             autocommit=True,
-        )
-        return dict(
-            host=self._config.HOST,
-            port=self._config.PORT,
-            user=self._config.USER,
-            password=self._config.PASSWORD,
-            database=self._config.DATABASE,
-            connection_timeout=self._config.CONNECTION_TIMEOUT,
-            use_pure=True,  # This ensures we use the C Extesion. Otherwise, we get SegFault
-            autocommit=True,
+            binary_prefix=True,
         )
 
     def _get_new_connection(self) -> MySQLConnection:
         config = self._get_connection_config()
+
         connection = pymysql.connect(**config)
         return connection
 

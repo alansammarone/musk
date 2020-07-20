@@ -1,3 +1,4 @@
+import itertools
 import random
 
 from musk.core.sql import MySQL
@@ -45,6 +46,7 @@ def get_all_probabilities():
 
 def get_all_sizes():
     query = f"SELECT distinct size FROM {simulation_model._tablename};"
+
     mysql = MySQL()
     results = mysql.fetch(query)
     return results
@@ -58,11 +60,14 @@ extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100
 
 if type_ == "simulation":
     p_range = extension_p_2d_range
-    random.shuffle(p_range)
-    for p in p_range:
-        for size in list(get_all_sizes()):
-            template = dict(parameters=dict(probability=p, size=size), repeat=128,)
-            simulation_queue.write([template] * 10)
+    sizes = [size["size"] for size in get_all_sizes()]
+
+    combinations = list(itertools.product(p_range, sizes))
+    random.shuffle(combinations)
+    for p, size in combinations:
+        template = dict(parameters=dict(probability=p, size=size), repeat=128,)
+        print(template)
+        simulation_queue.write([template] * 10)
 
 elif type_ == "stats":
 

@@ -1,12 +1,15 @@
 import bz2
 import itertools
 import json
+import numpy
+import pymysql
 import warnings
+
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Optional
 
-import numpy
+
 from musk.core import Message, MySQL, Processor, Simulation, SQSQueue
 from musk.misc.json import PythonObjectEncoder, as_python_object
 from musk.misc.misc import Misc
@@ -83,7 +86,7 @@ class PercolationModel:
             self.observables, cls=PythonObjectEncoder
         ).encode("utf-8")
 
-        observables_compressed = bz2.compress(bytes(observables_string))
+        observables_compressed = pymysql.Binary(bz2.compress(bytes(observables_string)))
         model_dict = asdict(self)
         model_dict.update(dict(observables=observables_compressed))
         return model_dict
