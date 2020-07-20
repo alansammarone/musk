@@ -77,17 +77,20 @@ class DequeuerRunner:
 
             if len(self._processes) < self._process_count:
                 self._processes.append(self._spawn_process())
+                self._logger.debug("Spawning new process")
 
             dead_indexes = []
             for index, process in enumerate(self._processes):
                 if not process.is_alive():
                     process.close()
                     dead_indexes.append(index)
+                    self._logger.debug("Detected dead process")
 
             for index in dead_indexes:
                 self._processes.pop(index)
 
             if self._killer.kill_now:
+                self._logger.debug("Shutting down")
                 break
 
             time.sleep(2)
