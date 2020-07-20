@@ -40,17 +40,24 @@ def async_wrapper(dequeuers: List[Dequeuer]):
     logger = logging.getLogger("root.async_wrapper")
     sleep_for_seconds = 10
     number_of_reads = 0
-    MAX_READS = 5
-    killer = GracefulKiller()
-    while killer.kill_now is False and number_of_reads < MAX_READS:
-        for dequeuer in dequeuers:
-            try:
-                dequeuer.dequeue()
-            except:
-                logger.exception("Exception in worker: ")
-                sys.exit(0)
-        number_of_reads += 1
-        time.sleep(sleep_for_seconds)
+    MAX_READS = 1
+    # killer = GracefulKiller()
+    # while killer.kill_now is False and number_of_reads < MAX_READS:
+    #     for dequeuer in dequeuers:
+    #         try:
+    #             dequeuer.dequeue()
+    #         except:
+    #             logger.exception("Exception in worker: ")
+    #             sys.exit(0)
+    #     number_of_reads += 1
+    #     time.sleep(sleep_for_seconds)
+
+    for dequeuer in dequeuers:
+        try:
+            dequeuer.dequeue()
+        except:
+            logger.exception("Exception in worker: ")
+            sys.exit(0)
 
     logger.info("Exiting gracefully.")
 
