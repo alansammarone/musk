@@ -18,8 +18,12 @@ class Dequeuer:
 
         self._logger.info(f"Processing message ({message.id}) : {message.body}")
         start = datetime.now()
-        self._processor.process(message)
-        message.delete()
+        try:
+            self._processor.process(message)
+            message.delete()
+        except BaseException:
+            message.requeue()
+
         end = datetime.now()
         took = (end - start).total_seconds()
         took = round(took, 3)

@@ -30,14 +30,21 @@ elif model == "square_2d":
 
 
 def get_all_sizes_and_probabilities():
-    query = f"select distinct size, probability from {simulation_model._tablename}"
+    query = f"SELECT distinct size, probability FROM {simulation_model._tablename}"
     mysql = MySQL()
     results = mysql.fetch(query)
     return results
 
 
 def get_all_probabilities():
-    query = f"select distinct probability from {simulation_model._tablename};"
+    query = f"SELECT distinct probability FROM {simulation_model._tablename};"
+    mysql = MySQL()
+    results = mysql.fetch(query)
+    return results
+
+
+def get_all_sizes():
+    query = f"SELECT distinct size FROM {simulation_model._tablename};"
     mysql = MySQL()
     results = mysql.fetch(query)
     return results
@@ -46,15 +53,16 @@ def get_all_probabilities():
 detailed_p_2d_range = [p / 1000 for p in range(550, 650)]
 general_p_2d_range = [p / 100 for p in range(45, 75)]
 coarse_p_1d_range = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100))]
 
 
 if type_ == "simulation":
-    p_range = coarse_p_1d_range
+    p_range = extension_p_2d_range
     for p in p_range:
         # for p in range(45, 75):
-        for size in [32, 64, 128, 256, 512, 1024]:
-            template = dict(parameters=dict(probability=p, size=size), repeat=512,)
-            simulation_queue.write([template] * 4)
+        for size in [32]:
+            template = dict(parameters=dict(probability=p, size=size), repeat=256,)
+            simulation_queue.write([template] * 5)
 
 elif type_ == "stats":
 
