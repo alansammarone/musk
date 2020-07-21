@@ -63,22 +63,14 @@ class DequeuerRunner:
 
     def dequeue(self) -> None:
 
-        # self._logger.debug("Starting pool")
-        # pool = concurrent.futures.ProcessPoolExecutor(
-        #     max_workers=self._cpu_count,
-        #     mp_context=multiprocessing.get_context(self.MP_CONTEXT),
-        # )
-        # for _ in range(self._cpu_count):
-        #     future = pool.submit(async_wrapper, (self._dequeuers))
-
-        # pool.shutdown(wait=True)
-
         while True:
 
+            # If we still didnt reach the number of desired processes, spawn a new one
             if len(self._processes) < self._process_count:
                 self._processes.append(self._spawn_process())
                 self._logger.debug("Spawning new process")
 
+            # Find out the indexes of the processes that finished or died
             dead_indexes = []
             for index, process in enumerate(self._processes):
                 if not process.is_alive():
@@ -86,11 +78,16 @@ class DequeuerRunner:
                     dead_indexes.append(index)
                     self._logger.debug("Detected dead process")
 
+            # Remove them from the list of active processes
             for index in dead_indexes:
                 self._processes.pop(index)
 
+            # If we received a SIGTERM, wait on child processes and then quit
             if self._killer.kill_now:
-                self._logger.debug("Shutting down")
+                for process in self._processes:
+                    self._logger.debug("Waiting on PID %s", process.pid)
+                    process.join()
+
                 break
 
             time.sleep(2)
