@@ -65,7 +65,14 @@ if type_ == "simulation":
     combinations = list(itertools.product(p_range, sizes))
     random.shuffle(combinations)
     for p, size in combinations:
-        template = dict(parameters=dict(probability=p, size=size), repeat=128,)
+        if size == 512:
+            repeat = 16
+        elif size == 394:
+            repeat = 56
+        else:
+            repeat = 128
+
+        template = dict(parameters=dict(probability=p, size=size), repeat=repeat,)
         print(template)
         simulation_queue.write([template] * 10)
 
