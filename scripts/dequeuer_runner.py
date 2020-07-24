@@ -80,7 +80,12 @@ class DequeuerRunner:
 
             # Remove them from the list of active processes
             for index in dead_indexes:
-                self._processes.pop(index)
+                self._processes[index] = None
+
+            # Finally, only keep non-null processes
+            self._processes = [
+                process for process in self._processes if process is not None
+            ]
 
             # If we received a SIGTERM, wait on child processes and then quit
             if self._killer.kill_now:
