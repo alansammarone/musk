@@ -25,18 +25,20 @@ class HasPercolatedCalculation(StatsCalculation):
 
 
 class AverageCorrelationLengthCalculation(StatsCalculation):
+    def _get_pair_distance(self, nodes):
+        node1, node2 = nodes
+        x1, y1 = node1
+        x2, y2 = node2
+        distance = ((y2 - y1) ** 2 + (x2 - x1) ** 2) ** 0.5
+        return distance
+
     def _get_cluster_correlation_length(self, cluster) -> float:
         correlation_length, n_combinations = 0, 0
         combinations = itertools.combinations(cluster, 2)
+        distances = list(map(self._get_pair_distance, combinations))
 
-        for node1, node2 in combinations:
-            x1, y1 = node1
-            x2, y2 = node2
-            distance = (y2 - y1) ** 2 + (x2 - x1) ** 2
-            correlation_length += distance
-            n_combinations += 1
-
-        return correlation_length / n_combinations
+        average_distance = sum(distances) / len(cluster)
+        return average_distance
 
     def calculate(self) -> float:
         clusters = self.model.observables["clusters"]
@@ -44,7 +46,6 @@ class AverageCorrelationLengthCalculation(StatsCalculation):
         average = 0
         for cluster in clusters:
             cluster_size = len(cluster)
-
             has_percolated = bool(
                 cluster_size >= self.lattice.get_size()
                 and (cluster & top_boundary)
@@ -54,7 +55,11 @@ class AverageCorrelationLengthCalculation(StatsCalculation):
                 continue
             if cluster_size == 1:
                 continue
-            average += self._get_cluster_correlation_length(cluster)
+
+            if cluster_size == 2:
+                average += 1
+            else:
+                average += self._get_cluster_correlation_length(cluster)
 
         return average / len(clusters)
 

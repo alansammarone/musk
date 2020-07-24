@@ -107,7 +107,6 @@ if type_ == "simulation":
         simulation_queue.write([template] * 10)
 
 elif type_ == "stats":
-    print("HI")
     combinations = list(get_all_sizes_and_probabilities())
 
     stats = [
@@ -118,9 +117,12 @@ elif type_ == "stats":
         # "percolating_cluster_strength"
     ]
     size_filter = [32, 64, 128]
+    probability_filter = extension_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)
-
+    combinations = filter(
+        lambda comb: comb["probability"] in probability_filter, combinations
+    )
     for row in combinations:
 
         probability = row["probability"]
