@@ -40,9 +40,9 @@ class MySQL:
     def fetch(self, query: str, parameters: tuple = ()):
         cursor = self._connection.cursor(pymysql.cursors.SSDictCursor)
         cursor.execute(query, parameters)
-        for row in cursor.fetchall_unbuffered():
-            yield row
+        results = list(cursor.fetchall_unbuffered())
         cursor.close()
+        return results
 
     def execute(self, query: str, parameters: dict):
         cursor = self._connection.cursor()

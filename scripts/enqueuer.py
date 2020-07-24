@@ -1,6 +1,6 @@
 import itertools
 import random
-
+import time
 from musk.core.sql import MySQL
 from musk.percolation import (
     P1LModel,
@@ -13,8 +13,14 @@ from musk.percolation import (
 
 
 model = "square_2d"
-type_ = "simulation"
-env = "prod"
+type_ = "stats"
+env = "dev"
+
+
+print(f"Environment: {env.upper()}")
+if env == "prod":
+    time.sleep(2)
+
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (
@@ -52,6 +58,31 @@ def get_all_sizes():
     return results
 
 
+def get_all_ids_for_size_and_probability(size, probability, limit):
+    query = f"""
+        SELECT id FROM {simulation_model._tablename}
+        WHERE size = {size} AND round(probability, 3) = {probability}
+        LIMIT {limit}
+    """
+    mysql = MySQL()
+    results = mysql.fetch(query)
+    return results
+
+
+def get_id_chunks(size, probability):
+
+    limit = 1024
+    chunk_size = 128
+    ids = [
+        row["id"]
+        for row in get_all_ids_for_size_and_probability(size, probability, limit)
+    ]
+    return [
+        ids[index : index + chunk_size]
+        for index in range(0, min(limit, len(ids)), chunk_size)
+    ]
+
+
 detailed_p_2d_range = [p / 1000 for p in range(550, 650)]
 general_p_2d_range = [p / 100 for p in range(45, 75)]
 coarse_p_1d_range = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -71,23 +102,37 @@ if type_ == "simulation":
             repeat = 56
         else:
             repeat = 128
-
         template = dict(parameters=dict(probability=p, size=size), repeat=repeat,)
         print(template)
         simulation_queue.write([template] * 10)
 
 elif type_ == "stats":
-
+    print("HI")
     combinations = list(get_all_sizes_and_probabilities())
-    # combinations = list(get_all_probabilities())
 
+    stats = [
+        # "has_percolated",
+        # "cluster_size_histogram",
+        # "average_cluster_size",
+        "average_correlation_length",
+        # "percolating_cluster_strength"
+    ]
+    size_filter = [32, 64, 128]
     random.shuffle(combinations)
+    combinations = filter(lambda comb: comb["size"] in size_filter, combinations)
+
     for row in combinations:
-        # print(row)
+
         probability = row["probability"]
         size = row["size"]
-        template = dict(parameters=dict(probability=probability, size=size))
-        print(template)
-        # template = dict(parameters=dict(size=32))
-
-        stats_queue.write([template])
+        id_chunks = get_id_chunks(size, probability)
+        for id_chunk in id_chunks:
+            template = dict(
+                parameters=dict(probability=probability, size=size),
+                ids=id_chunk,
+                stats=stats,
+            )
+            print(
+                f"Size: {size}, probability: {probability}, number of ids: {len(id_chunk)}"
+            )
+            stats_queue.write([template])

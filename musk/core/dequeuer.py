@@ -21,14 +21,15 @@ class Dequeuer:
         try:
             self._processor.process(message)
             message.delete()
+            end = datetime.now()
+            took = (end - start).total_seconds()
+            took = round(took, 3)
+            self._logger.info(
+                f"Success processing message ({message.id}), took {took}s"
+            )
         except BaseException:
             self._logger.exception("Exception in processor: ")
             message.requeue()
-
-        end = datetime.now()
-        took = (end - start).total_seconds()
-        took = round(took, 3)
-        self._logger.info(f"Success processing message ({message.id}), took {took}s")
 
     def dequeue(self):
 

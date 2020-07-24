@@ -5,8 +5,9 @@ from musk.percolation.base import (
     PercolationProcessor,
     PercolationSimulation,
     PercolationStatsModel,
-    PercolationStatsProcessor,
 )
+
+from musk.percolation.stats import PercolationStatsProcessor
 
 
 class P1LQueue(SQSQueue):

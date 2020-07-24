@@ -41,6 +41,18 @@ class PercolationModel:
         return query
 
     @classmethod
+    def get_by_size_probability_ids(cls, ids):
+        query = f"""
+            SELECT id, probability, size, observables, took, created
+            FROM {cls._tablename}
+            WHERE 
+                size = %(size)s AND 
+                round(probability, 6) = %(probability)s AND 
+                id IN ({", ".join(map(str, ids))})
+        """
+        return query
+
+    @classmethod
     def get_select_query_with_filters(cls, min_id, limit, probability=None, size=None):
 
         if probability:
@@ -219,203 +231,3 @@ class PercolationProcessor(Processor):
             mysql = MySQL()
             mysql.execute(simulation._get_insert_query(), simulation.model.to_db())
             mysql = None
-
-
-class PercolationStatsProcessor(Processor):
-
-    CHUNK_SIZE = 1024
-
-    def _get_has_percolated(self, model) -> bool:
-        clusters = model.observables["clusters"]
-        boundaries = self.lattice.get_boundaries()
-        top_boundary, bottom_boundary = list(boundaries)
-        has_percolated = False
-        for cluster in clusters:
-            if (cluster & top_boundary) and (cluster & bottom_boundary):
-                has_percolated = True
-                break
-        return has_percolated
-
-    def _get_cluster_correlation_length(self, cluster) -> float:
-        correlation_length, n_combinations = 0, 0
-        combinations = itertools.combinations(cluster, 2)
-
-        for node1, node2 in combinations:
-            x1, y1 = node1
-            x2, y2 = node2
-            distance = (y2 - y1) ** 2 + (x2 - x1) ** 2
-            correlation_length += distance
-            n_combinations += 1
-
-        return correlation_length / n_combinations
-
-    def _get_average_correlation_length(self, model) -> float:
-        clusters = model.observables["clusters"]
-        top_boundary, bottom_boundary = self.lattice.get_boundaries()
-        average = 0
-        for cluster in clusters:
-            cluster_size = len(cluster)
-
-            has_percolated = bool(
-                cluster_size >= self.lattice.get_size()
-                and (cluster & top_boundary)
-                and (cluster & bottom_boundary)
-            )
-            if has_percolated:
-                continue
-            if cluster_size == 1:
-                continue
-            average += self._get_cluster_correlation_length(cluster)
-
-        return average / len(clusters)
-
-    def _get_cluster_size_histogram(self, model) -> list:
-        bins = 10000
-        clusters = model.observables["clusters"]
-        number_of_nodes = self.lattice.get_number_of_nodes()
-        cluster_sizes = map(lambda cluster: len(cluster) / number_of_nodes, clusters)
-
-        hist, bin_edges = numpy.histogram(list(cluster_sizes), bins=bins, range=(0, 1))
-        cluster_size_histogram = hist.tolist()
-        cluster_size_histogram = {
-            size: count
-            for size, count in enumerate(cluster_size_histogram)
-            if count > 0
-        }
-
-        return cluster_size_histogram
-
-    def _get_average_cluster_size(self, model) -> float:
-
-        average_size = 0
-        clusters = model.observables["clusters"]
-        cluster_sizes = map(lambda cluster: len(cluster), clusters)
-        try:
-            # Warning: We're assuming that no clusters
-            # means average_size = 0
-            average_size = sum(cluster_sizes) / len(clusters)
-            number_of_nodes = self.lattice.get_number_of_nodes()
-            average_size = average_size / number_of_nodes
-        except ZeroDivisionError:
-            pass
-        return average_size
-
-    def _get_percolating_cluster_strength(self, model) -> float:
-        clusters = model.observables["clusters"]
-        top_boundary, bottom_boundary = self.lattice.get_boundaries()
-        for cluster in clusters:
-            cluster_size = len(cluster)
-
-            has_percolated = bool(
-                cluster_size >= self.lattice.get_size()
-                and (cluster & top_boundary)
-                and (cluster & bottom_boundary)
-            )
-            if not has_percolated:
-                continue
-
-            return cluster_size / self.lattice.get_number_of_nodes()
-        return 0
-
-    def _get_stats_for_model(self, model):
-        return dict(
-            # has_percolated=self._get_has_percolated(model),
-            # cluster_size_histogram=self._get_cluster_size_histogram(model),
-            # average_cluster_size=self._get_average_cluster_size(model),
-            # average_correlation=self._get_average_correlation_length(model),
-            percolating_cluster_strength=self._get_percolating_cluster_strength(model)
-        )
-
-    def _get_simulation_model_class(self):
-        return self.simulation_model_class
-
-    def _get_stats_model_class(self):
-        return self.stats_model_class
-
-    def _get_lattice_class(self):
-        return self.lattice_class
-
-    def _map_row_to_model(self, row):
-        return self._get_simulation_model_class().from_db(row)
-
-    def _insert_stats_models(self, models):
-        mysql = MySQL()
-        start = datetime.now()
-        StatsModelClass = self._get_stats_model_class()
-        for model in models:
-            mysql.execute(StatsModelClass.get_insert_query(), model.to_db())
-        end = datetime.now()
-        took = round((end - start).total_seconds(), 2)
-        self._logger.info(f"Inserting chunk took {took}s.")
-
-    def _update_stats_models(self, models_as_dict):
-        mysql = MySQL()
-        start = datetime.now()
-        StatsModelClass = self._get_stats_model_class()
-        for model_dict in models_as_dict:
-            mysql.execute(
-                StatsModelClass.get_update_query(
-                    (["simulation_id", model_dict["simulation_id"]]), model_dict
-                ),
-                model_dict,
-            )
-        end = datetime.now()
-        took = round((end - start).total_seconds(), 2)
-        self._logger.info(f"Update chunk took {took}s.")
-
-    def _get_simulation_rows(self, parameters, min_id):
-        mysql = MySQL()
-        SimulationModelClass = self._get_simulation_model_class()
-        query = SimulationModelClass.get_select_query_with_filters(
-            min_id, self.CHUNK_SIZE, **parameters
-        )
-        query_start = datetime.now()
-        mysql_rows = list(mysql.fetch(query, parameters))
-        query_end = datetime.now()
-        query_took = (query_end - query_start).total_seconds()
-        self._logger.debug(f"Stats simulation query took {query_took}s.")
-        return mysql_rows
-
-    def _process_simulation_chunk(self, chunk, parameters):
-        chunk_took = 0
-        stats_models = []
-        StatsModelClass = self._get_stats_model_class()
-        for result in chunk:
-            start = datetime.now()
-            model = self._map_row_to_model(result)
-            stats_field = self._get_stats_for_model(model)
-            stats_field["simulation_id"] = model.id
-            end = datetime.now()
-            took = (end - start).total_seconds()
-            # stats_model = StatsModelClass(
-            #     simulation_id=model.id,
-            #     size=model.size,
-            #     probability=model.probability,
-            #     created=datetime.now(),
-            #     took=took,
-            #     **stats_field,
-            # )
-            stats_models.append(stats_field)
-            chunk_took += took
-            stats_models.append(stats_field)
-        self._logger.info(f"Chunk processing took {chunk_took:.2f}s.")
-        self._update_stats_models(stats_models)
-
-    def process(self, message: Message):
-        parameters = message.body["parameters"]
-        LatticeClass = self._get_lattice_class()
-        self.lattice = LatticeClass(parameters["size"])
-        max_id_seen = 0
-        total_count = 0
-        results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
-        while results_chunk:
-
-            max_id_seen = max(map(lambda result: result["id"], results_chunk))
-            self._process_simulation_chunk(results_chunk, parameters)
-            total_count += len(results_chunk)
-            self._logger.info("Processed %s input models.", total_count)
-            if len(results_chunk) < self.CHUNK_SIZE:
-                break
-            results_chunk = list(self._get_simulation_rows(parameters, max_id_seen))
-
-        self._logger.info("Finished %s input models.", total_count)
