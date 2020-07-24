@@ -156,11 +156,9 @@ class PercolationStatsProcessor(Processor):
         return result
 
     def process(self, message):
-
         simulation_rows = self._get_simulation_rows(message)
         stats_dicts = []
         for row in simulation_rows:
-
             simulation_model = self._map_row_to_model(row)
             stats_dict = self._get_stats_dict(message, simulation_model)
             stats_dicts.append(stats_dict)
@@ -185,15 +183,13 @@ class PercolationStatsProcessor(Processor):
         start = datetime.now()
         StatsModelClass = self._get_stats_model_class()
         for model_dict in stats_dicts:
-            mysql.execute(
-                StatsModelClass.get_update_query(
-                    (["simulation_id", model_dict["simulation_id"]]), model_dict
-                ),
-                model_dict,
-            )
-        end = datetime.now()
-        took = round((end - start).total_seconds(), 2)
-        self._logger.info(f"Inserted rows in {took}s.")
+            key = "simulation_id"
+            key_value = model_dict[key]
+            query = StatsModelClass.get_update_query((key, key_value), model_dict)
+            mysql.execute(query, model_dict)
+        # end = datetime.now()
+        # took = round((end - start).total_seconds(), 2)
+        # self._logger.info(f"Inserted rows in {took}s.")
 
 
 # class PercolationStatsProcessor(Processor):
