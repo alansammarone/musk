@@ -53,7 +53,7 @@ class PercolationModel:
         return query
 
     @classmethod
-    def get_select_query_with_filters(cls, min_id, limit, probability=None, size=None):
+    def get_select_query_with_filters(cls, min_id, limit, obability=None, size=None):
 
         if probability:
             probability_filter = "round(probability, 6) = %(probability)s"
@@ -139,13 +139,21 @@ class PercolationStatsModel:
     def get_update_query(cls, key: tuple, attributes: dict) -> str:
 
         key_name, key_value = key
-        update_strings = [f"{key} = %({key})s" for key in attributes]
+        non_key_attributes = {
+            key: value for key, value in attributes.items() if key != key_name
+        }
+        column_names = ", ".join(attributes)
+        value_strings = [f"%({key})s" for key in attributes]
+        value_string = ", ".join(value_strings)
+        update_strings = [f"{key} = %({key})s" for key in non_key_attributes]
         update_string = ",\n".join(update_strings)
 
         query = f"""
-            UPDATE {cls._tablename}
-            SET {update_string}
-            WHERE {key_name} = %({key_name})s
+            INSERT INTO {cls._tablename} ({column_names})
+            VALUES ({value_string})
+            ON DUPLICATE KEY UPDATE
+            {update_string}
+
         """
         return query
 

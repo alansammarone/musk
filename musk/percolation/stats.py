@@ -245,12 +245,16 @@ class PercolationStatsProcessor(Processor):
         LatticeClass = self._get_lattice_class()
         lattice = LatticeClass(size)
         has_percolated_helper = HasPercolatedHelper(lattice)
-        result = dict(simulation_id=model.id)
+        result = dict(
+            simulation_id=model.id, probability=model.probability, size=model.size
+        )
         for stats in stats_to_compute:
             StatsClass = self.STATS_CLASS_MAP[stats]
             stats_instance = StatsClass(lattice, model, has_percolated_helper)
             stats_value = stats_instance.calculate()
+
             encoded_stats_value = stats_instance.encode_for_db(stats_value)
+
             result[stats] = encoded_stats_value
         return result
 
