@@ -54,7 +54,7 @@ class HasPercolatedCalculation(StatsCalculation):
 
 class AverageCorrelationLengthCalculation(StatsCalculation):
 
-    SAMPLES = 2 ** 15  # 32K
+    SAMPLES = 2 ** 16  # 64K
     BINS = 10000
 
     def __init__(self, lattice, model, has_percolated_helper):
