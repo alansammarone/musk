@@ -71,7 +71,7 @@ def get_all_ids_for_size_and_probability(size, probability, limit):
 
 def get_id_chunks(size, probability):
 
-    limit = 1024
+    limit = 4096
     chunk_size = 128
     ids = [
         row["id"]
@@ -116,7 +116,7 @@ elif type_ == "stats":
         "average_correlation_length",
         # "percolating_cluster_strength"
     ]
-    size_filter = [32, 64, 128]
+    size_filter = [64]
     probability_filter = extension_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)
