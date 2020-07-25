@@ -70,22 +70,32 @@ class DequeuerRunner:
                 self._processes.append(self._spawn_process())
                 self._logger.debug("Spawning new process")
 
-            # Find out the indexes of the processes that finished or died
-            dead_indexes = []
-            for index, process in enumerate(self._processes):
-                if not process.is_alive():
+            alive_processes = []
+            for process in self._processes:
+                if process.is_alive():
+                    alive_processes.append(process)
+                else:
+                    self._logger.debug("Process %s is dead.", process.pid)
                     process.close()
-                    dead_indexes.append(index)
-                    self._logger.debug("Detected dead process")
 
-            # Remove them from the list of active processes
-            for index in dead_indexes:
-                self._processes[index] = None
+            self._processes = alive_processes
 
-            # Finally, only keep non-null processes
-            self._processes = [
-                process for process in self._processes if process is not None
-            ]
+            # # Find out the indexes of the processes that finished or died
+            # dead_indexes = []
+            # for index, process in enumerate(self._processes):
+            #     if not process.is_alive():
+            #         process.close()
+            #         dead_indexes.append(index)
+            #         self._logger.debug("Detected dead process")
+
+            # # Remove them from the list of active processes
+            # for index in dead_indexes:
+            #     self._processes[index] = None
+
+            # # Finally, only keep non-null processes
+            # self._processes = [
+            #     process for process in self._processes if process is not None
+            # ]
 
             # If we received a SIGTERM, wait on child processes and then quit
             if self._killer.kill_now:

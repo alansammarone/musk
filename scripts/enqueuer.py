@@ -14,7 +14,7 @@ from musk.percolation import (
 
 model = "square_2d"
 type_ = "stats"
-env = "prod"
+env = "dev"
 
 
 print(f"Environment: {env.upper()}")

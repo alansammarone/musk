@@ -1,14 +1,42 @@
-from datetime import datetime
 import itertools
+import json
+import random
 
-
+from datetime import datetime
 from musk.core import MySQL, Processor
 
 
+class HasPercolatedHelper:
+    def __init__(self, lattice):
+        self._lattice = lattice
+        self._clusters = {}
+
+    def has_percolated(self, cluster):
+        try:
+            return self._clusters[cluster]
+        except KeyError:
+            self._clusters[cluster] = self._has_percolated(cluster)
+            return self._clusters[cluster]
+
+    def _has_percolated(self, cluster):
+        cluster_size = len(cluster)
+        top_boundary, bottom_boundary = self._lattice.get_boundaries()
+        has_percolated = bool(
+            cluster_size >= self._lattice.get_size()
+            and (cluster & top_boundary)
+            and (cluster & bottom_boundary)
+        )
+        return has_percolated
+
+
 class StatsCalculation:
-    def __init__(self, lattice, model):
+    def __init__(self, lattice, model, has_percolated_helper):
         self.lattice = lattice
         self.model = model
+        self.has_percolated_helper = has_percolated_helper
+
+    def _encode_list_as_dict(self, list_: list) -> dict:
+        return {size: count for size, count in enumerate(list_) if count > 0}
 
 
 class HasPercolatedCalculation(StatsCalculation):
@@ -25,43 +53,112 @@ class HasPercolatedCalculation(StatsCalculation):
 
 
 class AverageCorrelationLengthCalculation(StatsCalculation):
-    def _get_pair_distance(self, nodes):
-        node1, node2 = nodes
-        x1, y1 = node1
-        x2, y2 = node2
+
+    SAMPLES = 8192
+    BINS = 10000
+
+    def __init__(self, lattice, model, has_percolated_helper):
+        self.lattice = lattice
+        self.model = model
+        self.has_percolated_helper = has_percolated_helper
+        self.node_to_cluster_map = self._get_node_to_cluster_map()
+
+    def _get_pair_distance(self, first_node, second_node) -> float:
+        x1, y1 = first_node
+        x2, y2 = second_node
         distance = ((y2 - y1) ** 2 + (x2 - x1) ** 2) ** 0.5
         return distance
 
-    def _get_cluster_correlation_length(self, cluster) -> float:
-        correlation_length, n_combinations = 0, 0
-        combinations = itertools.combinations(cluster, 2)
-        distances = list(map(self._get_pair_distance, combinations))
+    def _get_node_to_cluster_map(self) -> dict:
 
-        average_distance = sum(distances) / len(cluster)
-        return average_distance
-
-    def calculate(self) -> float:
+        map_ = dict()
         clusters = self.model.observables["clusters"]
-        top_boundary, bottom_boundary = self.lattice.get_boundaries()
-        average = 0
-        for cluster in clusters:
-            cluster_size = len(cluster)
-            has_percolated = bool(
-                cluster_size >= self.lattice.get_size()
-                and (cluster & top_boundary)
-                and (cluster & bottom_boundary)
+        for index, cluster in enumerate(clusters):
+            # Only take finite clusters into account
+            if self.has_percolated_helper.has_percolated(cluster):
+                continue
+            for node in cluster:
+                map_[node] = index
+
+        return map_
+
+    def _nodes_belong_to_same_cluster(self, first_node, second_node) -> bool:
+        try:
+            return bool(
+                self.node_to_cluster_map[first_node]
+                == self.node_to_cluster_map[second_node]
             )
-            if has_percolated:
-                continue
-            if cluster_size == 1:
-                continue
+        except KeyError:
+            return False
 
-            if cluster_size == 2:
-                average += 1
+    def calculate(self):
+        # WARNING - 2D SPECIFIC!
+        # WARNING - 2D SPECIFIC!
+        # WARNING - 2D SPECIFIC!
+
+        all_nodes = list(self.lattice.get_all_nodes())
+        bins = [[] for _ in range(self.BINS)]
+        max_distance = 2 ** 0.5 * self.lattice.get_size()  # WARNING - 2D SPECIFIC!
+
+        for _ in range(self.SAMPLES):
+            first_node, second_node = random.choices(all_nodes, k=2)
+            belong_to_same_cluster = self._nodes_belong_to_same_cluster(
+                first_node, second_node
+            )
+            distance = self._get_pair_distance(first_node, second_node)
+            distance_bin = int(round(self.BINS * distance / max_distance))
+            bins[distance_bin].append(belong_to_same_cluster)
+
+        for index, same_cluster_observations in enumerate(bins):
+            if same_cluster_observations:
+                bins[index] = sum(same_cluster_observations) / len(
+                    same_cluster_observations
+                )
             else:
-                average += self._get_cluster_correlation_length(cluster)
+                bins[index] = 0
 
-        return average / len(clusters)
+        return bins
+
+    def encode_for_db(self, value):
+        return json.dumps(self._encode_list_as_dict(value))
+
+    # def _get_pair_distance(self, nodes):
+    #     node1, node2 = nodes
+    #     x1, y1 = node1
+    #     x2, y2 = node2
+    #     distance = ((y2 - y1) ** 2 + (x2 - x1) ** 2) ** 0.5
+    #     return distance
+
+    # def _get_cluster_correlation_length(self, cluster) -> float:
+    #     correlation_length, n_combinations = 0, 0
+    #     combinations = itertools.combinations(cluster, 2)
+    #     distances = list(map(self._get_pair_distance, combinations))
+
+    #     average_distance = sum(distances) / len(cluster)
+    #     return average_distance
+
+    # def calculate(self) -> float:
+    #     clusters = self.model.observables["clusters"]
+    #     top_boundary, bottom_boundary = self.lattice.get_boundaries()
+    #     average = 0
+    #     for cluster in clusters:
+    #         cluster_size = len(cluster)
+    #         has_percolated = bool(
+    #             cluster_size >= self.lattice.get_size()
+    #             and (cluster & top_boundary)
+    #             and (cluster & bottom_boundary)
+    #         )
+    #         if has_percolated:
+    #             continue
+    #         if cluster_size == 1:
+    #             continue
+
+    #         if cluster_size == 2:
+    #             average += 1
+    #         else:
+    #             average += self._get_cluster_correlation_length(cluster)
+
+    #     return average / len(clusters)
 
 
 class ClusterSizeHistogramCalculation(StatsCalculation):
@@ -78,13 +175,7 @@ class ClusterSizeHistogramCalculation(StatsCalculation):
             list(cluster_sizes), bins=self.BIN_COUNT, range=(0, 1)
         )
         cluster_size_histogram = hist.tolist()
-        cluster_size_histogram = {
-            size: count
-            for size, count in enumerate(cluster_size_histogram)
-            if count > 0
-        }
-
-        return cluster_size_histogram
+        return self._encode_list_as_dict(cluster_size_histogram)
 
 
 class AverageClusterSizeCalculation(StatsCalculation):
@@ -153,11 +244,14 @@ class PercolationStatsProcessor(Processor):
         probability = message.body["parameters"]["probability"]
         LatticeClass = self._get_lattice_class()
         lattice = LatticeClass(size)
+        has_percolated_helper = HasPercolatedHelper(lattice)
         result = dict(simulation_id=model.id)
         for stats in stats_to_compute:
             StatsClass = self.STATS_CLASS_MAP[stats]
-            stats_value = StatsClass(lattice, model).calculate()
-            result[stats] = stats_value
+            stats_instance = StatsClass(lattice, model, has_percolated_helper)
+            stats_value = stats_instance.calculate()
+            encoded_stats_value = stats_instance.encode_for_db(stats_value)
+            result[stats] = encoded_stats_value
         return result
 
     def process(self, message):
