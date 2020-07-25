@@ -14,7 +14,7 @@ from musk.percolation import (
 
 model = "square_2d"
 type_ = "stats"
-env = "dev"
+env = "prod"
 
 
 print(f"Environment: {env.upper()}")
@@ -117,7 +117,8 @@ elif type_ == "stats":
         # "percolating_cluster_strength"
     ]
     size_filter = [64]
-    probability_filter = extension_p_2d_range
+    # probability_filter = extension_p_2d_range +
+    probability_filter = general_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)
     combinations = filter(
