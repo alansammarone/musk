@@ -38,7 +38,7 @@ class Square2DLattice(Lattice):
             for j, entry in enumerate(row):
                 self.set_state_at_node(entry, i, j)
 
-    def get_number_of_nodes(self):
+    def get_number_of_nodes(self) -> int:
         return self.get_size() ** 2
 
     def get_state_as_matrix(self):
@@ -57,6 +57,9 @@ class Square2DLattice(Lattice):
         top_boundary = frozenset({(0, j) for j in range_})
         bottom_boundary = frozenset({(size - 1, j) for j in range_})
         return frozenset({top_boundary, bottom_boundary})
+
+    def get_max_distance(self) -> float:
+        return 2 ** 0.5 * self.get_size()
 
     def divide(self):
         """

@@ -38,21 +38,22 @@ class StatsCalculation:
     def _encode_list_as_dict(self, list_: list) -> dict:
         return {size: count for size, count in enumerate(list_) if count > 0}
 
+    def encode_for_db(self, value):
+        return value
+
 
 class HasPercolatedCalculation(StatsCalculation):
     def calculate(self) -> bool:
         clusters = self.model.observables["clusters"]
-        boundaries = self.lattice.get_boundaries()
-        top_boundary, bottom_boundary = list(boundaries)
         has_percolated = False
         for cluster in clusters:
-            if (cluster & top_boundary) and (cluster & bottom_boundary):
+            if self.has_percolated_helper.has_percolated(cluster):
                 has_percolated = True
                 break
         return has_percolated
 
 
-class AverageCorrelationLengthCalculation(StatsCalculation):
+class CorrelationFunctionCalculation(StatsCalculation):
 
     SAMPLES = 2 ** 16  # 64K
     BINS = 10000
@@ -74,6 +75,10 @@ class AverageCorrelationLengthCalculation(StatsCalculation):
         map_ = dict()
         clusters = self.model.observables["clusters"]
         for index, cluster in enumerate(clusters):
+
+            # Single node clusters are useless here
+            if len(cluster) == 1:
+                continue
             # Only take finite clusters into account
             if self.has_percolated_helper.has_percolated(cluster):
                 continue
@@ -92,13 +97,9 @@ class AverageCorrelationLengthCalculation(StatsCalculation):
             return False
 
     def calculate(self):
-        # WARNING - 2D SPECIFIC!
-        # WARNING - 2D SPECIFIC!
-        # WARNING - 2D SPECIFIC!
-
         all_nodes = list(self.lattice.get_all_nodes())
         bins = [[] for _ in range(self.BINS)]
-        max_distance = 2 ** 0.5 * self.lattice.get_size()  # WARNING - 2D SPECIFIC!
+        max_distance = self.lattice.get_max_distance()
 
         for _ in range(self.SAMPLES):
             first_node, second_node = random.choices(all_nodes, k=2)
@@ -178,41 +179,39 @@ class ClusterSizeHistogramCalculation(StatsCalculation):
         return self._encode_list_as_dict(cluster_size_histogram)
 
 
-class AverageClusterSizeCalculation(StatsCalculation):
+class MeanClusterSizeCalculation(StatsCalculation):
 
     # Warning: We're assuming that no clusters
     # means average_size = 0
 
     def calculate(self) -> float:
-        average_size = 0
+
         clusters = self.model.observables["clusters"]
-        cluster_sizes = map(lambda cluster: len(cluster), clusters)
+        clusters = filter(
+            lambda cluster: not self.has_percolated_helper.has_percolated(cluster),
+            clusters,
+        )  # Remove percolating clusters
+        cluster_sizes = list(map(lambda cluster: len(cluster), clusters))
+
+        mean_size = 0
         try:
-            average_size = sum(cluster_sizes) / len(clusters)
-            number_of_nodes = self.lattice.get_number_of_nodes()
-            average_size = average_size / number_of_nodes
+            mean_size = sum(cluster_sizes) / len(cluster_sizes)
         except ZeroDivisionError:
             pass
-        return average_size
+        return mean_size
 
 
 class PercolatingClusterStrengthCalculation(StatsCalculation):
     def calculate(self) -> float:
         clusters = self.model.observables["clusters"]
         top_boundary, bottom_boundary = self.lattice.get_boundaries()
+        percolating_cluster_size = 0
+
         for cluster in clusters:
-            cluster_size = len(cluster)
+            if self.has_percolated_helper.has_percolated(cluster):
+                percolating_cluster_size += len(cluster)
 
-            has_percolated = bool(
-                cluster_size >= self.lattice.get_size()
-                and (cluster & top_boundary)
-                and (cluster & bottom_boundary)
-            )
-            if not has_percolated:
-                continue
-
-            return cluster_size / self.lattice.get_number_of_nodes()
-        return 0
+        return percolating_cluster_size / self.lattice.get_number_of_nodes()
 
 
 class PercolationStatsProcessor(Processor):
@@ -220,8 +219,8 @@ class PercolationStatsProcessor(Processor):
     STATS_CLASS_MAP = {
         "has_percolated": HasPercolatedCalculation,
         "cluster_size_histogram": ClusterSizeHistogramCalculation,
-        "average_cluster_size": AverageClusterSizeCalculation,
-        "average_correlation_length": AverageCorrelationLengthCalculation,
+        "mean_cluster_size": MeanClusterSizeCalculation,
+        "correlation_function": CorrelationFunctionCalculation,
         "percolating_cluster_strength": PercolatingClusterStrengthCalculation,
     }
 
@@ -248,14 +247,15 @@ class PercolationStatsProcessor(Processor):
         result = dict(
             simulation_id=model.id, probability=model.probability, size=model.size
         )
+
         for stats in stats_to_compute:
             StatsClass = self.STATS_CLASS_MAP[stats]
             stats_instance = StatsClass(lattice, model, has_percolated_helper)
             stats_value = stats_instance.calculate()
-
             encoded_stats_value = stats_instance.encode_for_db(stats_value)
 
             result[stats] = encoded_stats_value
+
         return result
 
     def process(self, message):

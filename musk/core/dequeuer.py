@@ -14,9 +14,21 @@ class Dequeuer:
         self._config = config
         self._logger = logging.getLogger(__name__)
 
+    def _log_message_start(self, message):
+        message_id = message.id
+        message_body = message.body.copy()
+        for key, value in message_body.items():
+
+            if isinstance(value, list) and len(value) > 16:
+                value_repr = f"[{value[0]}, {value[1]}, {value[2]}, {value[3]}, ...] ({len(value)} elements)"
+                message_body[key] = value_repr
+
+        self._logger.info(f"Processing message ({message_id}): {message_body}")
+
     def _send_message_to_processor(self, message):
 
-        self._logger.info(f"Processing message ({message.id}) : {message.body}")
+        self._log_message_start(message)
+
         start = datetime.now()
         try:
             self._processor.process(message)

@@ -14,7 +14,7 @@ from musk.percolation import (
 
 model = "square_2d"
 type_ = "stats"
-env = "prod"
+env = "dev"
 
 
 print(f"Environment: {env.upper()}")
@@ -71,7 +71,7 @@ def get_all_ids_for_size_and_probability(size, probability, limit):
 
 def get_id_chunks(size, probability):
 
-    limit = 4096
+    limit = 8192
     chunk_size = 256
     ids = [
         row["id"]
@@ -110,13 +110,13 @@ elif type_ == "stats":
     combinations = list(get_all_sizes_and_probabilities())
 
     stats = [
-        # "has_percolated",
+        "has_percolated",
         # "cluster_size_histogram",
-        # "average_cluster_size",
-        "average_correlation_length",
-        # "percolating_cluster_strength"
+        "mean_cluster_size",
+        # "average_correlation_length",
+        "percolating_cluster_strength",
     ]
-    size_filter = [16, 32, 96, 128, 192, 256]
+    size_filter = [16, 32, 96, 128, 192, 256, 294, 512]
     probability_filter = detailed_p_2d_range + extension_p_2d_range + general_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)
