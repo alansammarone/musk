@@ -110,14 +110,14 @@ elif type_ == "stats":
     combinations = list(get_all_sizes_and_probabilities())
 
     stats = [
-        "has_percolated",
+        # "has_percolated",
         # "cluster_size_histogram",
-        "mean_cluster_size",
-        # "average_correlation_length",
-        "percolating_cluster_strength",
+        # "mean_cluster_size",
+        "correlation_function",
+        # "percolating_cluster_strength",
     ]
     # size_filter = [16, 32, 96, 128, 192, 256, 294, 512]
-    size_filter = [64]
+    size_filter = [128]
     probability_filter = detailed_p_2d_range + extension_p_2d_range + general_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)

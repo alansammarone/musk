@@ -36,7 +36,7 @@ class StatsCalculation:
         self.has_percolated_helper = has_percolated_helper
 
     def _encode_list_as_dict(self, list_: list) -> dict:
-        return {size: count for size, count in enumerate(list_) if count > 0}
+        return {size: round(count, 4) for size, count in enumerate(list_) if count > 0}
 
     def encode_for_db(self, value):
         return value
@@ -103,6 +103,8 @@ class CorrelationFunctionCalculation(StatsCalculation):
 
         for _ in range(self.SAMPLES):
             first_node, second_node = random.choices(all_nodes, k=2)
+            if first_node == second_node:
+                continue
             belong_to_same_cluster = self._nodes_belong_to_same_cluster(
                 first_node, second_node
             )
