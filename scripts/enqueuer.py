@@ -71,8 +71,8 @@ def get_all_ids_for_size_and_probability(size, probability, limit):
 
 def get_id_chunks(size, probability):
 
-    limit = 8192
-    chunk_size = 350
+    limit = 1280
+    chunk_size = 128
     ids = [
         row["id"]
         for row in get_all_ids_for_size_and_probability(size, probability, limit)
