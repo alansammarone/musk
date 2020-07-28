@@ -1,5 +1,6 @@
 import itertools
 import json
+import numpy
 import random
 
 from datetime import datetime
