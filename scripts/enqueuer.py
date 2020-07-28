@@ -69,13 +69,27 @@ def get_all_ids_for_size_and_probability(size, probability, limit):
     return results
 
 
+def get_all_ids_for_size_and_probability_newer_than(size, probability, limit, date):
+    query = f"""
+        SELECT id FROM {simulation_model._tablename}
+        WHERE size = {size} AND round(probability, 3) = {probability}
+        AND created >= "{date}"
+        LIMIT {limit}
+    """
+    mysql = MySQL()
+    results = mysql.fetch(query)
+    return results
+
+
 def get_id_chunks(size, probability):
 
     limit = 4096
     chunk_size = 256
     ids = [
         row["id"]
-        for row in get_all_ids_for_size_and_probability(size, probability, limit)
+        for row in get_all_ids_for_size_and_probability_newer_than(
+            size, probability, limit, "2020-07-28"
+        )
     ]
     return [
         ids[index : index + chunk_size]
@@ -90,35 +104,30 @@ extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100
 
 
 if type_ == "simulation":
-    p_range = extension_p_2d_range
-    sizes = [size["size"] for size in get_all_sizes()]
-
+    p_range = detailed_p_2d_range
+    # sizes = [size["size"] for size in get_all_sizes()]
+    sizes = [64]
     combinations = list(itertools.product(p_range, sizes))
     random.shuffle(combinations)
+    repeat = 512
     for p, size in combinations:
-        if size == 512:
-            repeat = 16
-        elif size == 394:
-            repeat = 56
-        else:
-            repeat = 128
         template = dict(parameters=dict(probability=p, size=size), repeat=repeat,)
+        simulation_queue.write([template] * 5)
         print(template)
-        simulation_queue.write([template] * 10)
 
 elif type_ == "stats":
     combinations = list(get_all_sizes_and_probabilities())
 
     stats = [
-        # "has_percolated",
-        # "cluster_size_histogram",
-        # "mean_cluster_size",
+        "has_percolated",
+        "cluster_size_histogram",
+        "mean_cluster_size",
         "correlation_function",
-        # "percolating_cluster_strength",
+        "percolating_cluster_strength",
     ]
     # size_filter = [16, 32, 96, 128, 192, 256, 294, 512]
     size_filter = [64]
-    probability_filter = detailed_p_2d_range + extension_p_2d_range + general_p_2d_range
+    probability_filter = detailed_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)
     combinations = filter(

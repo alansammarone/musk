@@ -55,7 +55,7 @@ class HasPercolatedCalculation(StatsCalculation):
 
 class CorrelationFunctionCalculation(StatsCalculation):
 
-    SAMPLES = 2 ** 17  # 128K
+    SAMPLES = 2 ** 16  # 128K
     BINS = 10000
 
     def __init__(self, lattice, model, has_percolated_helper):
