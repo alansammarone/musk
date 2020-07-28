@@ -179,7 +179,10 @@ class ClusterSizeHistogramCalculation(StatsCalculation):
             list(cluster_sizes), bins=self.BIN_COUNT, range=(0, 1)
         )
         cluster_size_histogram = hist.tolist()
-        return self._encode_list_as_dict(cluster_size_histogram)
+        return cluster_size_histogram
+
+    def encode_for_db(self, value):
+        return json.dumps(self._encode_list_as_dict(value))
 
 
 class MeanClusterSizeCalculation(StatsCalculation):
