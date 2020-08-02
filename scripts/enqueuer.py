@@ -104,7 +104,7 @@ extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100
 
 
 if type_ == "simulation":
-    p_range = extension_p_2d_range + general_p_2d_range
+    p_range = extension_p_2d_range + general_p_2d_range + detailed_p_2d_range
     # sizes = [size["size"] for size in get_all_sizes()]
     sizes = [128]
     combinations = list(itertools.product(p_range, sizes))
