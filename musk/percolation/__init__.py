@@ -2,6 +2,7 @@ from .percolation_square_2d import (
     P2SModel,
     P2SProcessor,
     P2SQueue,
+    P2SSimulation,
     P2SStatsProcessor,
     P2SStatsQueue,
 )

@@ -19,7 +19,8 @@
   pip:
     chdir: "{{ base_path }}"
     virtualenv: "{{ venv_folder }}"
-    virtualenv_command: /usr/local/bin/python3.7 -m venv {{ venv_folder }}
+    virtualenv_command: /usr/bin/python3 -m venv {{ venv_folder }}
+    # virtualenv_command: /usr/local/bin/python3.7 -m venv {{ venv_folder }}
     name: "."
     editable: yes
 

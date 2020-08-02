@@ -10,22 +10,6 @@ class Square2DLattice(Lattice):
         self._size = size
         super().__init__(size)
 
-    def get_neighbour_nodes(self, i, j):
-
-        last_node_index = self.get_size() - 1
-        neighbours = set()
-        # Clock-wise, starting from top
-        if i != 0:
-            neighbours.add((i - 1, j))
-        if j != last_node_index:
-            neighbours.add((i, j + 1))
-        if i != last_node_index:
-            neighbours.add((i + 1, j))
-        if j != 0:
-            neighbours.add((i, j - 1))
-
-        return neighbours
-
     def get_all_nodes(self):
         nodes = []
         for i in range(self.get_size()):
@@ -81,3 +65,39 @@ class Square2DLattice(Lattice):
                     state[node_key] = previous_state
         self._state = state
         self._size *= 2
+
+    def get_neighbour_nodes(self, i, j):
+        raise NotImplementedError
+
+
+class Square2DPeriodicLattice(Square2DLattice):
+    def get_neighbour_nodes(self, i, j):
+
+        last_node_index = self.get_size() - 1
+
+        return set(  # Clock-wise, starting from top
+            [
+                ((i - 1) % last_node_index, j),
+                (i, (j + 1) % last_node_index),
+                ((i + 1) % last_node_index, j),
+                (i, (j - 1) % last_node_index),
+            ]
+        )
+
+
+class Square2DFiniteLattice(Square2DLattice):
+    def get_neighbour_nodes(self, i, j):
+
+        last_node_index = self.get_size() - 1
+        neighbours = set()
+        # Clock-wise, starting from top
+        if i != 0:
+            neighbours.add((i - 1, j))
+        if j != last_node_index:
+            neighbours.add((i, j + 1))
+        if i != last_node_index:
+            neighbours.add((i + 1, j))
+        if j != 0:
+            neighbours.add((i, j - 1))
+
+        return neighbours

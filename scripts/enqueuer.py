@@ -106,13 +106,13 @@ extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100
 if type_ == "simulation":
     p_range = detailed_p_2d_range
     # sizes = [size["size"] for size in get_all_sizes()]
-    sizes = [64]
+    sizes = [192]
     combinations = list(itertools.product(p_range, sizes))
     random.shuffle(combinations)
     repeat = 512
     for p, size in combinations:
         template = dict(parameters=dict(probability=p, size=size), repeat=repeat,)
-        simulation_queue.write([template] * 5)
+        simulation_queue.write([template] * 3)
         print(template)
 
 elif type_ == "stats":
@@ -126,7 +126,7 @@ elif type_ == "stats":
         "percolating_cluster_strength",
     ]
     # size_filter = [16, 32, 96, 128, 192, 256, 294, 512]
-    size_filter = [64]
+    size_filter = [16, 32, 128, 192]
     probability_filter = detailed_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)

@@ -9,17 +9,17 @@
     log_dir: /log
     tmp_dir: /tmp
     branch: mysql
-  roles:
-    - name: bihealth.python3
-      python3_versions:
-      - "3.7"
+  # roles:
+  #   - name: bihealth.python3
+  #     python3_versions:
+  #     - "3.7"
 
   tasks:
     - name: Setup server
       include: tasks/setup.yaml
 
-    - name: Setup ufw
-      include: tasks/ufw.yaml
+    # - name: Setup ufw
+    #   include: tasks/ufw.yaml
 
     - name: Setup dequeuer
       include: tasks/dequeuer.yaml
