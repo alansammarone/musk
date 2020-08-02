@@ -13,7 +13,7 @@ from musk.percolation import (
 
 
 model = "square_2d"
-type_ = "stats"
+type_ = "simulation"
 env = "prod"
 
 
@@ -104,15 +104,15 @@ extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100
 
 
 if type_ == "simulation":
-    p_range = detailed_p_2d_range
+    p_range = extension_p_2d_range + general_p_2d_range
     # sizes = [size["size"] for size in get_all_sizes()]
-    sizes = [192]
+    sizes = [128]
     combinations = list(itertools.product(p_range, sizes))
     random.shuffle(combinations)
     repeat = 512
     for p, size in combinations:
         template = dict(parameters=dict(probability=p, size=size), repeat=repeat,)
-        simulation_queue.write([template] * 3)
+        simulation_queue.write([template] * 8)
         print(template)
 
 elif type_ == "stats":

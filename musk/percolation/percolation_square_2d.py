@@ -11,7 +11,7 @@ from musk.percolation.stats import PercolationStatsProcessor
 
 
 class P2SQueue(SQSQueue):
-    name = "p2s"
+    name = "percolation_2d_square"
 
 
 class P2SStatsQueue(SQSQueue):
@@ -19,7 +19,7 @@ class P2SStatsQueue(SQSQueue):
 
 
 class P2SModel(PercolationModel):
-    _tablename: str = "percolation_2d_square"
+    _tablename: str = "p2s"
 
 
 class P2SStatsModel(PercolationStatsModel):
