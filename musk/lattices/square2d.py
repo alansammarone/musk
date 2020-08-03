@@ -73,14 +73,14 @@ class Square2DLattice(Lattice):
 class Square2DPeriodicLattice(Square2DLattice):
     def get_neighbour_nodes(self, i, j):
 
-        last_node_index = self.get_size() - 1
+        size = self.get_size()
 
         return set(  # Clock-wise, starting from top
             [
-                ((i - 1) % last_node_index, j),
-                (i, (j + 1) % last_node_index),
-                ((i + 1) % last_node_index, j),
-                (i, (j - 1) % last_node_index),
+                ((i - 1) % size, j),
+                (i, (j + 1) % size),
+                ((i + 1) % size, j),
+                (i, (j - 1) % size),
             ]
         )
 

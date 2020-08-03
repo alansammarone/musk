@@ -13,7 +13,7 @@ from musk.percolation import (
 
 
 model = "square_2d"
-type_ = "simulation"
+type_ = "stats"
 env = "prod"
 
 
@@ -84,7 +84,7 @@ def get_all_ids_for_size_and_probability_newer_than(size, probability, limit, da
 def get_id_chunks(size, probability):
 
     limit = 4096
-    chunk_size = 256
+    chunk_size = 512
     ids = [
         row["id"]
         for row in get_all_ids_for_size_and_probability_newer_than(
@@ -106,13 +106,13 @@ extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100
 if type_ == "simulation":
     p_range = extension_p_2d_range + general_p_2d_range + detailed_p_2d_range
     # sizes = [size["size"] for size in get_all_sizes()]
-    sizes = [128]
+    sizes = [64]
     combinations = list(itertools.product(p_range, sizes))
     random.shuffle(combinations)
-    repeat = 512
+    repeat = 128
     for p, size in combinations:
         template = dict(parameters=dict(probability=p, size=size), repeat=repeat,)
-        simulation_queue.write([template] * 8)
+        simulation_queue.write([template] * 10)
         print(template)
 
 elif type_ == "stats":
@@ -126,8 +126,8 @@ elif type_ == "stats":
         "percolating_cluster_strength",
     ]
     # size_filter = [16, 32, 96, 128, 192, 256, 294, 512]
-    size_filter = [16, 32, 128, 192]
-    probability_filter = detailed_p_2d_range
+    size_filter = [64]
+    probability_filter = extension_p_2d_range + general_p_2d_range + detailed_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)
     combinations = filter(

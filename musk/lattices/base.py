@@ -116,7 +116,3 @@ class Lattice:
             )
 
         return frozenset(visited)
-
-    # def __del__(self):
-    #     self._state = None
-    #     del self._state

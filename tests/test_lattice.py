@@ -1,5 +1,9 @@
 import unittest
-from musk import Linear1DLattice, Square2DFiniteLattice
+from musk.lattices import (
+    Linear1DLattice,
+    Square2DFiniteLattice,
+    Square2DPeriodicLattice,
+)
 
 
 class TestLinear1DLattice(unittest.TestCase):
@@ -257,3 +261,36 @@ class TestSquare2DFiniteLattice(unittest.TestCase):
         )
 
         self.assertEqual(expected, lattice.get_boundaries())
+
+
+class TestSquare2DPeriodicLattice(unittest.TestCase):
+    def test_clusters_are_computed_correctly(self):
+
+        matrix_lattice_state = [
+            [1, 0, 0],
+            [0, 0, 1],
+            [1, 0, 1],
+        ]
+        lattice_size = 3
+        lattice = Square2DPeriodicLattice(lattice_size)
+        lattice.set_state_from_matrix(matrix_lattice_state)
+
+        expected_cluster = {(0, 0)}
+        actual_cluster = lattice.get_cluster((0, 0))
+
+        print(actual_cluster)
+        # self.assertEqual(expected_cluster, actual_cluster)
+
+        # expected_cluster = {(2, 0)}
+        # actual_cluster = lattice.get_cluster((2, 0))
+        # self.assertEqual(expected_cluster, actual_cluster)
+
+        # expected_cluster = {(1, 2), (2, 2)}
+        # for node in [(1, 2), (2, 2)]:
+        #     actual_cluster = lattice.get_cluster(node)
+        #     self.assertEqual(expected_cluster, actual_cluster)
+
+        # expected_cluster = {(0, 1), (0, 2), (1, 0), (1, 1), (2, 1)}
+        # for node in [(0, 1), (0, 2), (1, 0), (1, 1), (2, 1)]:
+        #     actual_cluster = lattice.get_cluster(node)
+        #     self.assertEqual(expected_cluster, actual_cluster)
