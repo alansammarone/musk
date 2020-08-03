@@ -278,7 +278,6 @@ class PercolationStatsProcessor(Processor):
             key = "simulation_id"
             key_value = model_dict[key]
             query = StatsModelClass.get_update_query((key, key_value), model_dict)
-            print(query)
             mysql.execute(query, model_dict)
 
 
