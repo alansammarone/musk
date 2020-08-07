@@ -3,7 +3,9 @@ import json
 import numpy
 import random
 
+from collections import defaultdict
 from datetime import datetime
+
 from musk.core import MySQL, Processor
 
 
@@ -84,12 +86,8 @@ class CorrelationFunctionCalculation(StatsCalculation):
         self.model = model
         self.has_percolated_helper = has_percolated_helper
         self.node_to_cluster_map = self._get_node_to_cluster_map()
-
-    def _get_pair_distance(self, first_node, second_node) -> float:
-        x1, y1 = first_node
-        x2, y2 = second_node
-        distance = ((y2 - y1) ** 2 + (x2 - x1) ** 2) ** 0.5
-        return distance
+        self.lattice_size = self.lattice.get_size()
+        self.half_lattice_size = self.lattice_size / 2
 
     def _get_node_to_cluster_map(self) -> dict:
 
@@ -117,10 +115,28 @@ class CorrelationFunctionCalculation(StatsCalculation):
         except KeyError:
             return False
 
+    def _compute_distance_vector(self, node1, node2):
+
+        x1, y1 = node1
+        x2, y2 = node2
+
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+
+        if dx > self.half_lattice_size:
+            dx /= self.half_lattice_size
+
+        if dy > self.half_lattice_size:
+            dy /= self.half_lattice_size
+
+        return dx, dy
+
     def calculate(self):
         all_nodes = list(self.lattice.get_all_nodes())
-        bins = [[] for _ in range(self.BINS)]
-        max_distance = self.lattice.get_max_distance()
+        correlation_function = defaultdict(list)
+        correlation_function[(0, 0)] = [
+            1
+        ]  # Nodes at zero distance are always in the same cluster
 
         for _ in range(self.SAMPLES):
             first_node, second_node = random.choices(all_nodes, k=2)
@@ -129,22 +145,26 @@ class CorrelationFunctionCalculation(StatsCalculation):
             belong_to_same_cluster = self._nodes_belong_to_same_cluster(
                 first_node, second_node
             )
-            distance = self._get_pair_distance(first_node, second_node)
-            distance_bin = int(round(self.BINS * distance / max_distance))
-            bins[distance_bin].append(belong_to_same_cluster)
+            # 2D Specific!
+            distance_vector = self._compute_distance_vector(first_node, second_node)
+            correlation_function[distance_vector].append(belong_to_same_cluster)
 
-        for index, same_cluster_observations in enumerate(bins):
-            if same_cluster_observations:
-                bins[index] = sum(same_cluster_observations) / len(
-                    same_cluster_observations
-                )
-            else:
-                bins[index] = 0
+        for distance_vector in correlation_function:
+            observations = correlation_function[distance_vector]
+            correlation_function[distance_vector] = sum(observations) / len(
+                observations
+            )
+        return correlation_function
 
-        return bins
+    def _encode_set_keys_as_str(self, value):
+        encoded = dict()
+        for key in value:
+            strkey = f"{key[0]}_{key[1]}"
+            encoded[strkey] = value[key]
+        return encoded
 
     def encode_for_db(self, value):
-        return json.dumps(self._encode_list_as_dict(value))
+        return json.dumps(self._encode_set_keys_as_str(value))
 
 
 class ClusterSizeHistogramCalculation(StatsCalculation):
@@ -281,40 +301,74 @@ class PercolationStatsProcessor(Processor):
             mysql.execute(query, model_dict)
 
 
-# def _get_pair_distance(self, nodes):
-#     node1, node2 = nodes
-#     x1, y1 = node1
-#     x2, y2 = node2
-#     distance = ((y2 - y1) ** 2 + (x2 - x1) ** 2) ** 0.5
-#     return distance
+# class CorrelationFunctionCalculation(StatsCalculation):
 
-# def _get_cluster_correlation_length(self, cluster) -> float:
-#     correlation_length, n_combinations = 0, 0
-#     combinations = itertools.combinations(cluster, 2)
-#     distances = list(map(self._get_pair_distance, combinations))
+#     SAMPLES = 2 ** 16  # 128K
+#     BINS = 10000
 
-#     average_distance = sum(distances) / len(cluster)
-#     return average_distance
+#     def __init__(self, lattice, model, has_percolated_helper):
+#         self.lattice = lattice
+#         self.model = model
+#         self.has_percolated_helper = has_percolated_helper
+#         self.node_to_cluster_map = self._get_node_to_cluster_map()
 
-# def calculate(self) -> float:
-#     clusters = self.model.observables["clusters"]
-#     top_boundary, bottom_boundary = self.lattice.get_boundaries()
-#     average = 0
-#     for cluster in clusters:
-#         cluster_size = len(cluster)
-#         has_percolated = bool(
-#             cluster_size >= self.lattice.get_size()
-#             and (cluster & top_boundary)
-#             and (cluster & bottom_boundary)
-#         )
-#         if has_percolated:
-#             continue
-#         if cluster_size == 1:
-#             continue
+#     def _get_pair_distance(self, first_node, second_node) -> float:
+#         x1, y1 = first_node
+#         x2, y2 = second_node
+#         distance = ((y2 - y1) ** 2 + (x2 - x1) ** 2) ** 0.5
+#         return distance
 
-#         if cluster_size == 2:
-#             average += 1
-#         else:
-#             average += self._get_cluster_correlation_length(cluster)
+#     def _get_node_to_cluster_map(self) -> dict:
 
-#     return average / len(clusters)
+#         map_ = dict()
+#         clusters = self.model.observables["clusters"]
+#         for index, cluster in enumerate(clusters):
+
+#             # Single node clusters are useless here
+#             if len(cluster) == 1:
+#                 continue
+#             # Only take finite clusters into account
+#             if self.has_percolated_helper.has_percolated(cluster):
+#                 continue
+#             for node in cluster:
+#                 map_[node] = index
+
+#         return map_
+
+#     def _nodes_belong_to_same_cluster(self, first_node, second_node) -> bool:
+#         try:
+#             return bool(
+#                 self.node_to_cluster_map[first_node]
+#                 == self.node_to_cluster_map[second_node]
+#             )
+#         except KeyError:
+#             return False
+
+#     def calculate(self):
+#         all_nodes = list(self.lattice.get_all_nodes())
+#         bins = [[] for _ in range(self.BINS)]
+#         max_distance = self.lattice.get_max_distance()
+
+#         for _ in range(self.SAMPLES):
+#             first_node, second_node = random.choices(all_nodes, k=2)
+#             if first_node == second_node:
+#                 continue
+#             belong_to_same_cluster = self._nodes_belong_to_same_cluster(
+#                 first_node, second_node
+#             )
+#             distance = self._get_pair_distance(first_node, second_node)
+#             distance_bin = int(round(self.BINS * distance / max_distance))
+#             bins[distance_bin].append(belong_to_same_cluster)
+
+#         for index, same_cluster_observations in enumerate(bins):
+#             if same_cluster_observations:
+#                 bins[index] = sum(same_cluster_observations) / len(
+#                     same_cluster_observations
+#                 )
+#             else:
+#                 bins[index] = 0
+
+#         return bins
+
+#     def encode_for_db(self, value):
+#         return json.dumps(self._encode_list_as_dict(value))
