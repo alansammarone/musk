@@ -18,6 +18,7 @@ env = "prod"
 
 
 print(f"Environment: {env.upper()}")
+print(f"Type: {type_.upper()}")
 if env == "prod":
     time.sleep(2)
 
@@ -84,7 +85,7 @@ def get_all_ids_for_size_and_probability_newer_than(size, probability, limit, da
 def get_id_chunks(size, probability):
 
     limit = 4096
-    chunk_size = 128
+    chunk_size = 512
     ids = [
         row["id"]
         for row in get_all_ids_for_size_and_probability_newer_than(
@@ -130,6 +131,7 @@ elif type_ == "stats":
     size_filter = [16, 32, 64, 128]
     size_filter = [24, 48, 96]
     size_filter = [192, 256]
+    size_filter = [64]
     probability_filter = extension_p_2d_range + general_p_2d_range + detailed_p_2d_range
     random.shuffle(combinations)
     combinations = filter(lambda comb: comb["size"] in size_filter, combinations)

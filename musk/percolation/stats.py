@@ -87,7 +87,7 @@ class CorrelationFunctionCalculation(StatsCalculation):
         self.has_percolated_helper = has_percolated_helper
         self.node_to_cluster_map = self._get_node_to_cluster_map()
         self.lattice_size = self.lattice.get_size()
-        self.half_lattice_size = self.lattice_size / 2
+        self.half_lattice_size = int(self.lattice_size / 2)
 
     def _get_node_to_cluster_map(self) -> dict:
 
@@ -124,10 +124,10 @@ class CorrelationFunctionCalculation(StatsCalculation):
         dy = abs(y2 - y1)
 
         if dx > self.half_lattice_size:
-            dx /= self.half_lattice_size
+            dx -= self.half_lattice_size
 
         if dy > self.half_lattice_size:
-            dy /= self.half_lattice_size
+            dy -= self.half_lattice_size
 
         return dx, dy
 
@@ -151,9 +151,15 @@ class CorrelationFunctionCalculation(StatsCalculation):
 
         for distance_vector in correlation_function:
             observations = correlation_function[distance_vector]
-            correlation_function[distance_vector] = sum(observations) / len(
-                observations
+            correlation_function[distance_vector] = round(
+                sum(observations) / len(observations), 3
             )
+
+        correlation_function = {
+            key: value for key, value in correlation_function.items() if value > 0
+        }  # Remove keys whose value is 0
+
+        print(correlation_function)
         return correlation_function
 
     def _encode_set_keys_as_str(self, value):
