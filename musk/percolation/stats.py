@@ -159,7 +159,6 @@ class CorrelationFunctionCalculation(StatsCalculation):
             key: value for key, value in correlation_function.items() if value > 0
         }  # Remove keys whose value is 0
 
-        print(correlation_function)
         return correlation_function
 
     def _encode_set_keys_as_str(self, value):
