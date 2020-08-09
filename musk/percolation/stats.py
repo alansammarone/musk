@@ -124,10 +124,10 @@ class CorrelationFunctionCalculation(StatsCalculation):
         dy = abs(y2 - y1)
 
         if dx > self.half_lattice_size:
-            dx -= self.half_lattice_size
+            dx = self.lattice_size - dx
 
         if dy > self.half_lattice_size:
-            dy -= self.half_lattice_size
+            dy = self.lattice_size - dy
 
         return dx, dy
 
