@@ -1,5 +1,6 @@
 from .base import Lattice
 import functools
+import random
 
 
 class Square2DLattice(Lattice):
@@ -63,8 +64,16 @@ class Square2DLattice(Lattice):
                 ]:
                     node_key = self._get_node_key(*index)
                     state[node_key] = previous_state
+
         self._state = state
         self._size *= 2
+
+    def change_state_with_probability(self, old_state, new_state, probability):
+
+        for (i, j) in self.get_all_nodes():
+            if self.get_state_at_node(i, j) == old_state:
+                if random.random() < probability:
+                    self.set_state_at_node(new_state, i, j)
 
     def get_neighbour_nodes(self, i, j):
         raise NotImplementedError

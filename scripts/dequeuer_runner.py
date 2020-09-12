@@ -17,6 +17,8 @@ from musk.percolation import (
     P2SQueue,
     P2SStatsProcessor,
     P2SStatsQueue,
+    P2MQueue,
+    P2MProcessor,
 )
 from musk.misc.logging import setup_logging
 
@@ -80,23 +82,6 @@ class DequeuerRunner:
 
             self._processes = alive_processes
 
-            # # Find out the indexes of the processes that finished or died
-            # dead_indexes = []
-            # for index, process in enumerate(self._processes):
-            #     if not process.is_alive():
-            #         process.close()
-            #         dead_indexes.append(index)
-            #         self._logger.debug("Detected dead process")
-
-            # # Remove them from the list of active processes
-            # for index in dead_indexes:
-            #     self._processes[index] = None
-
-            # # Finally, only keep non-null processes
-            # self._processes = [
-            #     process for process in self._processes if process is not None
-            # ]
-
             # If we received a SIGTERM, wait on child processes and then quit
             if self._killer.kill_now:
                 for process in self._processes:
@@ -119,8 +104,10 @@ if __name__ == "__main__":
     queue_env = DequeuerConfig.ENV
 
     dequeuers = [
-        Dequeuer(P2SQueue(queue_env), P2SProcessor()),
-        Dequeuer(P2SStatsQueue(queue_env), P2SStatsProcessor()),
+        Dequeuer(P2MQueue(queue_env), P2MProcessor()),
+        # Dequeuer(P2SStatsQueue(queue_env), P2SStatsProcessor()),
+        # Dequeuer(P2SQueue(queue_env), P2SProcessor()),
+        # Dequeuer(P2SStatsQueue(queue_env), P2SStatsProcessor()),
         # Dequeuer(P1LQueue(queue_env), P1LProcessor()),
         # Dequeuer(P1LStatsQueue(queue_env), P1LStatsProcessor()),
     ]

@@ -1,3 +1,12 @@
+from .percolation_mandelbrot_2d import (
+    P2MModel,
+    P2MProcessor,
+    P2MQueue,
+    P2MSimulation,
+    # P2SStatsProcessor,
+    P2MStatsQueue,
+)
+
 from .percolation_square_2d import (
     P2SModel,
     P2SProcessor,
