@@ -16,7 +16,7 @@ from musk.percolation import (
 
 
 model = "mandelbrot_2d"
-env = "dev"
+env = "prod"
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (
@@ -145,8 +145,8 @@ elif type_ == "simulation" and model is "mandelbrot_2d":
     initial_size = 2
     repeat = 56
 
-    n_divisions = 3
-    repeat = 4
+    # n_divisions = 3
+    # repeat = 4
 
     for p in p_range:
         template = dict(
@@ -156,6 +156,7 @@ elif type_ == "simulation" and model is "mandelbrot_2d":
             repeat=repeat,
         )
         simulation_queue.write([template] * 10)
+        print(template)
 
 
 elif type_ == "stats":

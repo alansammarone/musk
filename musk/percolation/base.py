@@ -142,19 +142,20 @@ class PercolationStatsModel:
         non_key_attributes = {
             key: value for key, value in attributes.items() if key != key_name
         }
-        column_names = ", ".join(attributes)
+        column_names = "`, `".join(attributes)
         value_strings = [f"%({key})s" for key in attributes]
         value_string = ", ".join(value_strings)
         update_strings = [f"{key} = %({key})s" for key in non_key_attributes]
         update_string = ",\n".join(update_strings)
 
         query = f"""
-            INSERT INTO {cls._tablename} ({column_names})
+            INSERT INTO {cls._tablename} (`{column_names}`)
             VALUES ({value_string})
             ON DUPLICATE KEY UPDATE
             {update_string}
 
         """
+
         return query
 
     def to_db(self):

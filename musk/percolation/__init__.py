@@ -3,7 +3,7 @@ from .percolation_mandelbrot_2d import (
     P2MProcessor,
     P2MQueue,
     P2MSimulation,
-    # P2SStatsProcessor,
+    P2MStatsProcessor,
     P2MStatsQueue,
 )
 

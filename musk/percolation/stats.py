@@ -261,6 +261,12 @@ class PercolationStatsProcessor(Processor):
             simulation_id=model.id, probability=model.probability, size=model.size
         )
 
+        try:
+            result["initial_size"] = model.initial_size
+            result["index"] = model.index
+        except:
+            pass
+
         for stats in stats_to_compute:
             StatsClass = self.STATS_CLASS_MAP[stats]
             stats_instance = StatsClass(lattice, model, has_percolated_helper)
