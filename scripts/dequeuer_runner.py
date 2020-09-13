@@ -19,6 +19,8 @@ from musk.percolation import (
     P2SStatsQueue,
     P2MQueue,
     P2MProcessor,
+    P2MStatsProcessor,
+    P2MStatsQueue,
 )
 from musk.misc.logging import setup_logging
 
@@ -105,6 +107,7 @@ if __name__ == "__main__":
 
     dequeuers = [
         Dequeuer(P2MQueue(queue_env), P2MProcessor()),
+        Dequeuer(P2MStatsQueue(queue_env), P2MStatsProcessor()),
         # Dequeuer(P2SStatsQueue(queue_env), P2SStatsProcessor()),
         # Dequeuer(P2SQueue(queue_env), P2SProcessor()),
         # Dequeuer(P2SStatsQueue(queue_env), P2SStatsProcessor()),

@@ -16,7 +16,7 @@ from musk.percolation import (
 
 
 model = "mandelbrot_2d"
-env = "prod"
+env = "dev"
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (
@@ -109,7 +109,7 @@ coarse_p_1d_range = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 extension_p_2d_range = [p / 100 for p in list(range(1, 45)) + list(range(75, 100))]
 
 
-type_ = "simulation"
+type_ = "stats"
 
 
 print(f"Environment: {env.upper()}")
@@ -177,6 +177,7 @@ elif type_ == "stats":
     size_filter = [16, 32, 96, 128, 192, 256, 294, 512]
     size_filter = [16, 32, 96, 128, 192, 256, 294]
     size_filter = [64, 128, 192, 256, 512]
+    size_filter = [2, 4, 8, 16, 32, 64, 128, 256]
     probability_filter = extension_p_2d_range + general_p_2d_range
     probability_filter = detailed_p_2d_range
     probability_filter = extension_p_2d_range + general_p_2d_range + detailed_p_2d_range
