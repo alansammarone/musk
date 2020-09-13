@@ -170,7 +170,6 @@ class P2MStatsModel:
             {update_string}
 
         """
-        print(query)
         return query
 
     def to_db(self):

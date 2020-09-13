@@ -16,7 +16,7 @@ from musk.percolation import (
 
 
 model = "mandelbrot_2d"
-env = "dev"
+env = "prod"
 
 if model == "linear_1d":
     simulation_queue, stats_queue, simulation_model = (
@@ -87,7 +87,7 @@ def get_all_ids_for_size_and_probability_newer_than(size, probability, limit, da
 def get_id_chunks(size, probability):
 
     limit = 4096
-    chunk_size = 128
+    chunk_size = 256
     ids = [
         row["id"]
         for row in get_all_ids_for_size_and_probability_newer_than(
