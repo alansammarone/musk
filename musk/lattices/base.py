@@ -1,5 +1,6 @@
 import logging
 import random
+import functools
 
 from ..exceptions import InvalidStateException
 
@@ -17,7 +18,10 @@ Cluster = FrozenSet[NodeIndex]
 class Lattice:
 
     _size: int
-    _state: Dict = {}
+    _state: Dict
+
+    def __init__(self, size):
+        self._state = {}
 
     def get_all_nodes(self) -> List[NodeIndex]:
         raise NotImplemented
@@ -92,18 +96,18 @@ class Lattice:
         return frozenset(clusters)
 
     def get_cluster(self, start_node: NodeIndex) -> Cluster:
-        """ 
+        """
             Return the cluster start_node belongs to.
         """
         start_node_state = self.get_state_at_node(*start_node)
-        visited, stack = set(), [start_node]
+        visited, stack = set(), set([start_node])
         while stack:
             node = stack.pop()
             if node in visited:
                 continue
             visited.add(node)
             neighbors = self.get_neighbour_nodes(*node)
-            stack.extend(
+            stack.update(
                 filter(
                     lambda neighbor: self.get_state_at_node(*neighbor)
                     == start_node_state,

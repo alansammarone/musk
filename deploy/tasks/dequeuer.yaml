@@ -1,0 +1,32 @@
+- name: Ensure {{ conf_dir }} exists
+  file: path={{ conf_dir }} state=directory
+
+- name: Ensure {{ log_dir }} exists
+  file: path={{ log_dir }} state=directory
+
+- name: Upload dequeuer configuration
+  template:
+    src: config/dequeuer.env
+    dest: "{{ conf_dir }}/dequeuer.env"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Send SIGTERM to dequeuer processes
+  command: pkill -SIGTERM -f dequeuer_runner.py 
+  register: result
+  changed_when: result.rc == 0
+  failed_when: result.rc not in [0,1]  
+
+- name: Set crontab job
+  cron:
+    job: '
+      bash -c ''
+        source {{ conf_dir }}/dequeuer.env;
+        cd {{ base_path }}/scripts && ./run_dequeuer.sh
+        >> {{ log_dir }}/dequeuer.log 2>&1 &
+      ''
+      '
+    state: present
+    name: dequeuer_musk
+    minute: "*"

@@ -6,6 +6,7 @@ from .base import Lattice
 class Linear1DLattice(Lattice):
     def __init__(self, size):
         self._size = size
+        super().__init__(size)
 
     def get_neighbour_nodes(self, index):
         last_node_index = self.get_size() - 1

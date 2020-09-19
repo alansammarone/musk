@@ -2,11 +2,14 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
-
-.DS_Store
+*.env
+*.prof
+*.DS_Store
+tags
+inventory.yaml
 
 data/
+roles/
 # C extensions
 *.so
 
@@ -15,6 +18,8 @@ data/
 build/
 develop-eggs/
 dist/
+tests/
+
 downloads/
 eggs/
 .eggs/

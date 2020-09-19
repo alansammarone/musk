@@ -1,0 +1,30 @@
+- name: Install apt packages
+  apt:
+    state: present
+    update_cache: yes
+    pkg:
+      - git
+      - python3-venv
+      - python3-dev
+      - ufw
+
+- name: Clone or update repository from Github
+  git:
+    repo: "{{ repository }}"
+    dest: "{{ base_path }}"
+    accept_hostkey: yes
+    version: "{{ branch }}"
+
+- name: Create virtualenv and install dependencies
+  pip:
+    chdir: "{{ base_path }}"
+    virtualenv: "{{ venv_folder }}"
+    virtualenv_command: /usr/bin/python3 -m venv {{ venv_folder }}
+    # virtualenv_command: /usr/local/bin/python3.7 -m venv {{ venv_folder }}
+    name: "."
+    editable: yes
+
+
+
+
+

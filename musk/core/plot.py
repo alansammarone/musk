@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn
 import string
 from scipy.optimize import curve_fit
@@ -11,12 +12,10 @@ class Plot:
         3: dict(figsize=(16, 9), dpi=250),
     }
 
-    def __init__(self, X, Y, parameters, fit_fn=None):
-        self.X = X
-        self.Y = Y
+    def __init__(self, parameters={}):
         self.parameters = parameters
-        self.fit_fn = fit_fn
         self._setup_style()
+        self._setup_figure()
 
     def _setup_style(self):
         seaborn.set()
@@ -25,23 +24,33 @@ class Plot:
         plt.rc("xtick", labelsize="x-small")
         plt.rc("ytick", labelsize="x-small")
 
-    def _plot_observations(self):
-        plt.scatter(self.X, self.Y, label="Observation")
+    def _setup_figure(self):
+        figure_parameters = self._get_figure_parameters()
+        plt.figure(**figure_parameters)
 
-    def _get_fit_label(self, fit_parameters):
+    def _plot_observations(self, X, Y, label, err):
+        label_observation = f"{label} (Observation)"
+        plt.errorbar(X, Y, yerr=err, fmt="o", label=label)
+        # plt.scatter(X, Y, label=label)
+
+    def _get_fit_label(self, base_label, fit_parameters):
         string_reprs = []
         for index, value in enumerate(fit_parameters):
             letter = string.ascii_lowercase[index]
-            value_repr = f"{value:.3f}"
+            value_repr = f"{value:.5f}"
             string_reprs.append(f"{letter}={value_repr}")
         string_repr = ", ".join(string_reprs)
-        label = f"Fit: {string_repr}"
+        label = f"{base_label} (Fit - {string_repr})"
         return label
 
-    def _plot_fit(self, fit_fn):
-        parameters, _ = curve_fit(fit_fn, self.X, self.Y)
-        label = self._get_fit_label(parameters)
-        plt.plot(self.X, self.fit_fn(self.X, *parameters), "--", label=label)
+    def _plot_fit(self, X, Y, fit_fn, label):
+        parameters, _ = curve_fit(fit_fn, X, Y)
+
+        label = self._get_fit_label(label, parameters)
+        X_fit = np.linspace(min(X), max(X), 100)
+        print(parameters)
+        print(fit_fn(X_fit, *parameters))
+        plt.plot(X_fit, fit_fn(X_fit, *parameters), "--", label=label)
 
     def _add_labels(self, xlabel, ylabel):
         plt.xlabel(xlabel)
@@ -59,15 +68,14 @@ class Plot:
     def _get_figure_parameters(self):
         if self.figure_quality in self.FIGURE_QUALITY_MAP:
             return self.FIGURE_QUALITY_MAP[self.figure_quality]
+        raise ValueError
 
-        return self.figure_quality
+    def plot(self, X, Y, label, fit_fn=None, err=None):
+        self._plot_observations(X, Y, label, err)
+        if fit_fn:
+            self._plot_fit(X, Y, fit_fn, label)
 
     def save(self):
-
-        plt.figure(**self._get_figure_parameters())
-        self._plot_observations()
-        if self.fit_fn:
-            self._plot_fit(self.fit_fn)
 
         self._add_labels(self.xlabel, self.ylabel)
         self._add_title(self.title)

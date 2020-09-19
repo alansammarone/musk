@@ -1,29 +1,21 @@
 from .base import Lattice
+import functools
+import random
 
 
 class Square2DLattice(Lattice):
+
+    _neighbours = {}
+
     def __init__(self, size):
         self._size = size
-
-    def get_neighbour_nodes(self, i, j):
-        last_node_index = self.get_size() - 1
-        neighbours = set()
-        # Clock-wise, starting from top
-        if i != 0:
-            neighbours.add((i - 1, j))
-        if j != last_node_index:
-            neighbours.add((i, j + 1))
-        if i != last_node_index:
-            neighbours.add((i + 1, j))
-        if j != 0:
-            neighbours.add((i, j - 1))
-
-        return neighbours
+        super().__init__(size)
 
     def get_all_nodes(self):
+        nodes = []
         for i in range(self.get_size()):
             for j in range(self.get_size()):
-                yield (i, j)
+                yield ((i, j))
 
     def set_state_from_matrix(self, matrix):
 
@@ -31,7 +23,7 @@ class Square2DLattice(Lattice):
             for j, entry in enumerate(row):
                 self.set_state_at_node(entry, i, j)
 
-    def get_number_of_nodes(self):
+    def get_number_of_nodes(self) -> int:
         return self.get_size() ** 2
 
     def get_state_as_matrix(self):
@@ -51,9 +43,12 @@ class Square2DLattice(Lattice):
         bottom_boundary = frozenset({(size - 1, j) for j in range_})
         return frozenset({top_boundary, bottom_boundary})
 
+    def get_max_distance(self) -> float:
+        return 2 ** 0.5 * self.get_size()
+
     def divide(self):
-        """ 
-            Update state so that any node with a given state 
+        """
+            Update state so that any node with a given state
             becomes 4 nodes with the same state
         """
         state = {}
@@ -69,5 +64,49 @@ class Square2DLattice(Lattice):
                 ]:
                     node_key = self._get_node_key(*index)
                     state[node_key] = previous_state
+
         self._state = state
         self._size *= 2
+
+    def change_state_with_probability(self, old_state, new_state, probability):
+
+        for (i, j) in self.get_all_nodes():
+            if self.get_state_at_node(i, j) == old_state:
+                if random.random() < probability:
+                    self.set_state_at_node(new_state, i, j)
+
+    def get_neighbour_nodes(self, i, j):
+        raise NotImplementedError
+
+
+class Square2DPeriodicLattice(Square2DLattice):
+    def get_neighbour_nodes(self, i, j):
+
+        size = self.get_size()
+
+        return set(  # Clock-wise, starting from top
+            [
+                ((i - 1) % size, j),
+                (i, (j + 1) % size),
+                ((i + 1) % size, j),
+                (i, (j - 1) % size),
+            ]
+        )
+
+
+class Square2DFiniteLattice(Square2DLattice):
+    def get_neighbour_nodes(self, i, j):
+
+        last_node_index = self.get_size() - 1
+        neighbours = set()
+        # Clock-wise, starting from top
+        if i != 0:
+            neighbours.add((i - 1, j))
+        if j != last_node_index:
+            neighbours.add((i, j + 1))
+        if i != last_node_index:
+            neighbours.add((i + 1, j))
+        if j != 0:
+            neighbours.add((i, j - 1))
+
+        return neighbours
